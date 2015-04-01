@@ -6,11 +6,9 @@ class CollectionUtil {
      * equality check.
      */
     public static <T> boolean contains(Comparator<T> comparator, Collection<T> collection, T o) {
-        for (T comparison in collection) {
-            if (comparator.compare(comparison, o) == 0)
-                return true
-        }
-        return false
+        // if comparator.compare returns 0 for any element, then the
+        // object is in the collection
+        return collection.any { !comparator.compare(it, o) }
     }
 
     /**
