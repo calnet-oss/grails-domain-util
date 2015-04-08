@@ -1,5 +1,6 @@
 package edu.berkeley.util.domain
 
+import groovy.util.logging.Slf4j
 import org.codehaus.groovy.grails.commons.DefaultGrailsDomainClass
 import org.codehaus.groovy.grails.commons.DomainClassArtefactHandler
 
@@ -23,7 +24,10 @@ import java.security.MessageDigest
  * "static mapping" field of the domain class.  If the mapping field is
  * missing, an exception will be thrown.
  */
+@Slf4j
 class DomainLogicalComparator<T> implements Comparator<T> {
+
+    private boolean isTraceEnabled = log.isTraceEnabled()
 
     /**
      *  HashCodeBuilder will build up a hashCode based on multiple
@@ -93,7 +97,7 @@ class DomainLogicalComparator<T> implements Comparator<T> {
             return 0
         Map<Integer, Boolean> visitMap = [:]
         HashCodeBuilder hcb = new HashCodeBuilder()
-        logicalHashCode(hcb, visitMap, o1)
+        logicalHashCode(hcb, visitMap, o1, 0, log.isTraceEnabled())
         return hcb.toHashCode()
     }
 
@@ -111,7 +115,7 @@ class DomainLogicalComparator<T> implements Comparator<T> {
      *        been visited in order to prevent circular reference loops.
      * @param o1 The object to produce a logical hash code for.
      */
-    protected static void logicalHashCode(HashCodeBuilder hcb, Map<Integer, Boolean> visitMap, T o1) {
+    protected static void logicalHashCode(HashCodeBuilder hcb, Map<Integer, Boolean> visitMap, T o1, int depth, boolean _isTraceEnabled) {
         if (o1 == null)
             return
 
@@ -126,7 +130,7 @@ class DomainLogicalComparator<T> implements Comparator<T> {
 
         if (o1 instanceof Collection) {
             for (def val in o1) {
-                logicalHashCode(hcb, visitMap, val)
+                logicalHashCode(hcb, visitMap, val, depth + 1, _isTraceEnabled)
             }
         } else {
             DefaultGrailsDomainClass domainClass = new DefaultGrailsDomainClass(o1.getClass())
@@ -139,10 +143,14 @@ class DomainLogicalComparator<T> implements Comparator<T> {
                         if (val != null && (val instanceof Collection || isDomain(val))) {
                             // value is a Collection or a domain class that
                             // we'll recursively process
-                            logicalHashCode(hcb, visitMap, val)
+                            if (_isTraceEnabled)
+                                log.trace(getIndentation(depth) + "Object ${o1.hashCode()}, type=${o1.getClass().getName()}: ${propertyName}: is a collection or domain object")
+                            logicalHashCode(hcb, visitMap, val, depth + 1, _isTraceEnabled)
                         } else if (val != null) {
                             // append the property name and object to the
                             // hash code builder, which will update the hash
+                            if (_isTraceEnabled)
+                                log.trace(getIndentation(depth) + "Object ${o1.hashCode()}, type=${o1.getClass().getName()}: ${propertyName}: val=$val, hashCode=${val.hashCode()}")
                             hcb.append(val, propertyName.hashCode())
                         }
                     }
@@ -152,11 +160,29 @@ class DomainLogicalComparator<T> implements Comparator<T> {
     }
 
     /**
+     * For trace logging
+     */
+    private static String getIndentation(int depth) {
+        def spaces = new char[depth * 2]
+        Arrays.fill(spaces, ' ' as char)
+        return new String(spaces)
+    }
+
+    /**
      * Compare two domain objects for logical equality.  Logical equality
      * means everything but the domain instance identifiers are logically
      * equal.
      */
     public int compare(T o1, T o2) {
-        return logicalHashCode(o1).compareTo(logicalHashCode(o2))
+        int o1Hash = logicalHashCode(o1)
+        int o2Hash = logicalHashCode(o2)
+        int result = o1Hash.compareTo(o2Hash)
+        if (isTraceEnabled) {
+            log.trace("Comparing ${o1.hashCode()} and ${o2.hashCode()}")
+            log.trace("Hash ${o1.hashCode()}: $o1Hash")
+            log.trace("Hash ${o2.hashCode()}: $o2Hash")
+            log.trace("Result: ${o1.hashCode()}:$o1Hash and ${o2.hashCode()}:$o2Hash -> ${result}")
+        }
+        return result
     }
 }
