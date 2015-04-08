@@ -28,6 +28,8 @@ import java.security.MessageDigest
 class DomainLogicalComparator<T> implements Comparator<T> {
 
     private boolean isTraceEnabled = log.isTraceEnabled()
+    private List includes
+    private List excludes
 
     /**
      *  HashCodeBuilder will build up a hashCode based on multiple
@@ -92,12 +94,12 @@ class DomainLogicalComparator<T> implements Comparator<T> {
         return DomainClassArtefactHandler.isDomainClass(o.getClass())
     }
 
-    protected static int logicalHashCode(T o1) {
+    protected static int logicalHashCode(T o1, List includes = null, List excludes = null) {
         if (o1 == null)
             return 0
         Map<Integer, Boolean> visitMap = [:]
         HashCodeBuilder hcb = new HashCodeBuilder()
-        logicalHashCode(hcb, visitMap, o1, 0, log.isTraceEnabled())
+        logicalHashCode(hcb, visitMap, o1, includes, excludes, 0, log.isTraceEnabled())
         return hcb.toHashCode()
     }
 
@@ -115,7 +117,7 @@ class DomainLogicalComparator<T> implements Comparator<T> {
      *        been visited in order to prevent circular reference loops.
      * @param o1 The object to produce a logical hash code for.
      */
-    protected static void logicalHashCode(HashCodeBuilder hcb, Map<Integer, Boolean> visitMap, T o1, int depth, boolean _isTraceEnabled) {
+    protected static void logicalHashCode(HashCodeBuilder hcb, Map<Integer, Boolean> visitMap, T o1, List includes, List excludes, int depth, boolean _isTraceEnabled) {
         if (o1 == null)
             return
 
@@ -130,7 +132,7 @@ class DomainLogicalComparator<T> implements Comparator<T> {
 
         if (o1 instanceof Collection) {
             for (def val in o1) {
-                logicalHashCode(hcb, visitMap, val, depth + 1, _isTraceEnabled)
+                logicalHashCode(hcb, visitMap, val, includes, excludes, depth + 1, _isTraceEnabled)
             }
         } else {
             DefaultGrailsDomainClass domainClass = new DefaultGrailsDomainClass(o1.getClass())
@@ -138,6 +140,10 @@ class DomainLogicalComparator<T> implements Comparator<T> {
                 // skip if it's the identity property in the domain instance
                 if (!property.isIdentity()) {
                     String propertyName = property.name
+                    if (includes != null && !includes.contains(propertyName))
+                        continue
+                    if (excludes != null && excludes.contains(propertyName))
+                        continue
                     if (o1.properties.containsKey(propertyName)) {
                         def val = o1.properties[propertyName]
                         if (val != null && (val instanceof Collection || isDomain(val))) {
@@ -145,7 +151,7 @@ class DomainLogicalComparator<T> implements Comparator<T> {
                             // we'll recursively process
                             if (_isTraceEnabled)
                                 log.trace(getIndentation(depth) + "Object ${o1.hashCode()}, type=${o1.getClass().getName()}: ${propertyName}: is a collection or domain object")
-                            logicalHashCode(hcb, visitMap, val, depth + 1, _isTraceEnabled)
+                            logicalHashCode(hcb, visitMap, val, includes, excludes, depth + 1, _isTraceEnabled)
                         } else if (val != null) {
                             // append the property name and object to the
                             // hash code builder, which will update the hash
@@ -174,8 +180,8 @@ class DomainLogicalComparator<T> implements Comparator<T> {
      * equal.
      */
     public int compare(T o1, T o2) {
-        int o1Hash = logicalHashCode(o1)
-        int o2Hash = logicalHashCode(o2)
+        int o1Hash = logicalHashCode(o1, includes, excludes)
+        int o2Hash = logicalHashCode(o2, includes, excludes)
         int result = o1Hash.compareTo(o2Hash)
         if (isTraceEnabled) {
             log.trace("Comparing ${o1.hashCode()} and ${o2.hashCode()}")

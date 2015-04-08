@@ -4,6 +4,7 @@ class Person {
 
     String id // uid
     String dateOfBirthMMDD
+    String dummyField
 
     static hasMany = [names: PersonName]
 

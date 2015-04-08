@@ -20,27 +20,54 @@ class DomainLogicalComparatorSpec extends Specification {
         return new PersonName(id: "pn2", nameType: new NameType(id: "nt2", typeName: "testType2"), fullName: "John Mark Smith")
     }
 
-    def setup() {
-        // Build two name sets that are logically equivalent but have
-        // different hash codes as returned by Set.hashCode().
+    private LinkedHashSet getNameSet1() {
         LinkedHashSet nameSet1 = new LinkedHashSet()
         nameSet1.add(getName1())
         nameSet1.add(getName2())
+        return nameSet1
+    }
+
+    private LinkedHashSet getNameSet1Same() {
         LinkedHashSet nameSet1same = new LinkedHashSet()
         nameSet1same.add(getName2())
         nameSet1same.add(getName1())
+        return nameSet1same
+    }
 
-        person1 = new Person(uid: "1", dateOfBirthMMDD: "0101", names: nameSet1)
-        person1same = new Person(uid: "1same", dateOfBirthMMDD: "0101", names: nameSet1same)
-        person2 = new Person(uid: "2", dateOfBirthMMDD: "0202")
-        person2same = new Person(uid: "2same", dateOfBirthMMDD: "0202")
+    private Person getPerson1() {
+        return new Person(uid: "1", dateOfBirthMMDD: "0101", names: getNameSet1())
+    }
+
+    private Person getPerson1Same() {
+        return new Person(uid: "1same", dateOfBirthMMDD: "0101", names: getNameSet1Same())
+    }
+
+    private Person getPerson2() {
+        return new Person(uid: "2", dateOfBirthMMDD: "0202")
+    }
+
+    private Person getPerson2Same() {
+        return new Person(uid: "2same", dateOfBirthMMDD: "0202")
+    }
+
+    def setup() {
+        // Build two name sets that are logically equivalent but have
+        // different hash codes as returned by Set.hashCode().
+        LinkedHashSet nameSet1 = getNameSet1()
+        LinkedHashSet nameSet1same = getNameSet1Same()
+
+        person1 = getPerson1()
+        person1same = getPerson1Same()
+        person2 = getPerson2()
+        person2same = getPerson2Same()
     }
 
     def cleanup() {
     }
 
     /**
-     *  Test that the Comparator correctly detects logical equality between two different objects.
+     *  Test that the Comparator correctly detects logical equality between
+     *  two different objects.
      */
     void "test comparator equality"() {
         given:
@@ -61,6 +88,52 @@ class DomainLogicalComparatorSpec extends Specification {
             int compareResult = comparator.compare(person1, person2)
         then:
             compareResult != 0
+    }
+
+    /**
+     * Test that 'includes' works.  'includes' tells the Comparator which
+     * fields to include in the comparison,
+     */
+    void "test comparator equality with includes"() {
+        given:
+            Person _person1 = getPerson1()
+            Person _person1same = getPerson1Same()
+            // set dummy field to be different to make the two objects different
+            _person1.dummyField = "A"
+            _person1same.dummyField = "B"
+            DomainLogicalComparator<Person> comparatorWithoutIncludes = new DomainLogicalComparator<Person>()
+            DomainLogicalComparator<Person> comparatorWithIncludes = new DomainLogicalComparator<Person>(includes: ['dateOfBirthMMDD', 'names'])
+        when:
+            int compareWithoutIncludesResult = comparatorWithoutIncludes.compare(_person1, _person1same)
+            int compareWithIncludesResult = comparatorWithIncludes.compare(_person1, _person1same)
+        then:
+            // without the includes, the comparison should show inequality
+            compareWithoutIncludesResult != 0
+            // with includes, the comparison should show equality
+            compareWithIncludesResult == 0
+    }
+
+    /**
+     * Test that 'excludes' works.  'excludes' tells the Comparator which
+     * fields to exclude from the comparison.
+     */
+    void "test comparator equality with excludes"() {
+        given:
+            Person _person1 = getPerson1()
+            Person _person1same = getPerson1Same()
+            // set dummy field to be different to make the two objects different
+            _person1.dummyField = "A"
+            _person1same.dummyField = "B"
+            DomainLogicalComparator<Person> comparatorWithoutExcludes = new DomainLogicalComparator<Person>()
+            DomainLogicalComparator<Person> comparatorWithExcludes = new DomainLogicalComparator<Person>(excludes: ['dummyField'])
+        when:
+            int compareWithoutExcludesResult = comparatorWithoutExcludes.compare(_person1, _person1same)
+            int compareWithExcludesResult = comparatorWithExcludes.compare(_person1, _person1same)
+        then:
+            // without the excludes, the comparison should show inequality
+            compareWithoutExcludesResult != 0
+            // with excludes, the comparison should show equality
+            compareWithExcludesResult == 0
     }
 
     /**
