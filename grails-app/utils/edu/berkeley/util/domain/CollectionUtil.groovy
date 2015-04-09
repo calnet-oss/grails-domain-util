@@ -26,7 +26,7 @@ class CollectionUtil {
      * call, target will only contain what's in source.
      */
     public static <T> void sync(Comparator<T> comparator, Collection<T> target, Collection<T> source) {
-        if (target == null || source == null)
+        if (!target || !source)
             throw new IllegalArgumentException("target or source cannot be null")
         // add anything in source that target doesn't already have
         source.collect().each {
