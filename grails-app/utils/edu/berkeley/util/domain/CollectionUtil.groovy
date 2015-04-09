@@ -53,14 +53,14 @@ class CollectionUtil {
             throw new IllegalArgumentException("target or source cannot be null")
         // add anything in source that target doesn't already have
         source.collect().each {
-            if (!contains(target, it)) {
+            if (!contains(target, (LogicalEqualsAndHashCodeInterface)it)) {
                 if (!target.add(it))
                     throw new RuntimeException("add() failed on $target for $it")
             }
         }
         // remove anything from target that's not in source
         target.collect().each {
-            if (!contains(source, it)) {
+            if (!contains(source, (LogicalEqualsAndHashCodeInterface)it)) {
                 if (!target.remove(it))
                     throw new RuntimeException("remove() failed on $target for $it")
             }
