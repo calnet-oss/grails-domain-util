@@ -5,10 +5,12 @@ import edu.berkeley.util.domain.transform.LogicalEqualsAndHashCode
 @LogicalEqualsAndHashCode(excludes = ["dummyField"])
 class Person {
 
+    long version
     String id // uid
     String dateOfBirthMMDD
     String dummyField
 
+    Set<PersonName> names
     static hasMany = [names: PersonName]
 
     static constraints = {
