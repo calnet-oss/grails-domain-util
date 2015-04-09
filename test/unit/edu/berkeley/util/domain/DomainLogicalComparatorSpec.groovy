@@ -3,15 +3,9 @@ package edu.berkeley.util.domain
 import grails.test.mixin.TestMixin
 import grails.test.mixin.support.GrailsUnitTestMixin
 import spock.lang.Specification
-import edu.berkeley.util.domain.LogicalEqualsAndHashCodeInterface
 
 @TestMixin(GrailsUnitTestMixin)
 class DomainLogicalComparatorSpec extends Specification {
-
-    Person person1
-    Person person1same
-    Person person2
-    Person person2same
 
     private PersonName getName1() {
         return new PersonName(id: "pn1", nameType: new NameType(id: "nt1", typeName: "testType1"), fullName: "John M Smith")
@@ -52,15 +46,6 @@ class DomainLogicalComparatorSpec extends Specification {
     }
 
     def setup() {
-        // Build two name sets that are logically equivalent but have
-        // different hash codes as returned by Set.hashCode().
-        LinkedHashSet nameSet1 = getNameSet1()
-        LinkedHashSet nameSet1same = getNameSet1Same()
-
-        person1 = getPerson1()
-        person1same = getPerson1Same()
-        person2 = getPerson2()
-        person2same = getPerson2Same()
     }
 
     def cleanup() {
@@ -74,7 +59,7 @@ class DomainLogicalComparatorSpec extends Specification {
         given:
             DomainLogicalComparator<Person> comparator = new DomainLogicalComparator<Person>()
         when:
-            int compareResult = comparator.compare(person1, person1same)
+            int compareResult = comparator.compare(getPerson1(), getPerson1Same())
         then:
             compareResult == 0
     }
@@ -86,7 +71,7 @@ class DomainLogicalComparatorSpec extends Specification {
         given:
             DomainLogicalComparator<Person> comparator = new DomainLogicalComparator<Person>()
         when:
-            int compareResult = comparator.compare(person1, person2)
+            int compareResult = comparator.compare(getPerson1(), getPerson2())
         then:
             compareResult != 0
     }
@@ -139,17 +124,33 @@ class DomainLogicalComparatorSpec extends Specification {
 
     void "test @LogicalEqualsAndHashCode excludes field"() {
         given:
-            Person person1 = new Person(uid: "1", dateOfBirthMMDD: "0101")
+            Person person1 = new edu.berkeley.util.domain.Person(uid: "1", dateOfBirthMMDD: "0101")
         when:
             List<String> excludes = person1.logicalHashCodeExcludes
         then:
             excludes != null && excludes == ["dummyField"]
     }
 
+    void "test hash codes using @LogicalEqualsAndHashCode and logicalHashCode()"() {
+        given:
+            Person person1 = getPerson1()
+            Person person1same = getPerson1Same()
+            Person person2 = getPerson2()
+        when:
+            int hashCode1 = person1.logicalHashCode()
+            int hashCode1same = person1same.logicalHashCode()
+            int hashCode2 = person2.logicalHashCode()
+        then:
+            hashCode1 != 0
+            hashCode2 != 0
+            hashCode1 == hashCode1same
+            hashCode1 != hashCode2
+    }
+
     /**
      *  Test equality using the @LogicalEqualsAndHashCode annotation and logicalHashCode()
      */
-    void "test comparator equality using @LogicalEqualsAndHashCode and logicalHashCode()"() {
+    void "test equality using @LogicalEqualsAndHashCode and logicalHashCode()"() {
         given:
             // dummyField ie excluded in the annotation
             Person person1 = new Person(uid: "1", dateOfBirthMMDD: "0101", dummyField: "ABC")
@@ -163,7 +164,7 @@ class DomainLogicalComparatorSpec extends Specification {
     /**
      *  Test equality using the @LogicalEqualsAndHashCode annotation and logicalEquals()
      */
-    void "test comparator equality using @LogicalEqualsAndHashCode and logicalEquals()"() {
+    void "test equality using @LogicalEqualsAndHashCode and logicalEquals()"() {
         given:
             // dummyField is excluded in the annotation
             Person person1 = new Person(uid: "1", dateOfBirthMMDD: "0101", dummyField: "ABC")
@@ -172,6 +173,34 @@ class DomainLogicalComparatorSpec extends Specification {
             boolean theSame = person1.logicalEquals(person1same)
         then:
             theSame == true
+    }
+
+    /**
+     *  Test inequality using the @LogicalEqualsAndHashCode annotation and logicalHashCode()
+     */
+    void "test inequality using @LogicalEqualsAndHashCode and logicalHashCode()"() {
+        given:
+            // dummyField is excluded in the annotation
+            Person person1 = getPerson1()
+            Person person2 = getPerson2()
+        when:
+            int compareResult = person1.logicalHashCode().compareTo(person2.logicalHashCode())
+        then:
+            compareResult != 0
+    }
+
+    /**
+     *  Test inequality using the @LogicalEqualsAndHashCode annotation and logicalEquals()
+     */
+    void "test inequality using @LogicalEqualsAndHashCode and logicalEquals()"() {
+        given:
+            // dummyField is excluded in the annotation
+            Person person1 = getPerson1()
+            Person person2 = getPerson2()
+        when:
+            boolean theSame = person1.logicalEquals(person2)
+        then:
+            theSame == false
     }
 
     void "test @LogicalEqualsAndHashCode instance implements LogicalEqualsAndHashCodeInterface()"() {
