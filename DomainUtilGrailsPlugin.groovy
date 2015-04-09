@@ -7,9 +7,9 @@ class DomainUtilGrailsPlugin {
     def grailsVersion = "2.4 > *"
     // resources that are excluded from plugin packaging
     def pluginExcludes = [
-        "grails-app/views/**",
-        "grails-app/domain/**",
-        "grails-app/controllers/**"
+            "grails-app/views/**",
+            "grails-app/domain/**",
+            "grails-app/controllers/**"
     ]
 
     // TODO Fill in these fields
