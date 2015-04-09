@@ -9,7 +9,8 @@ class DomainUtilGrailsPlugin {
     def pluginExcludes = [
             "grails-app/views/**",
             "grails-app/domain/**",
-            "grails-app/controllers/**"
+            "grails-app/controllers/**",
+            "scripts/_Events.groovy"
     ]
 
     // TODO Fill in these fields
