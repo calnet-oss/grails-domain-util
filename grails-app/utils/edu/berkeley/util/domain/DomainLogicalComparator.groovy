@@ -139,7 +139,7 @@ class DomainLogicalComparator<T> implements Comparator<T> {
                 // skip if it's the identity property in the domain instance
                 if (!property.isIdentity()) {
                     String propertyName = property.name
-                    if (includes != null && !includes.contains(propertyName))
+                    if (includes != null && includes.size() > 0 && !includes.contains(propertyName))
                         continue
                     if (excludes != null && excludes.contains(propertyName))
                         continue
