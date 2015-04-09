@@ -136,6 +136,43 @@ class DomainLogicalComparatorSpec extends Specification {
             compareWithExcludesResult == 0
     }
 
+    void "test @LogicalEqualsAndHashCode excludes field"() {
+        given:
+            Person person1 = new Person(uid: "1", dateOfBirthMMDD: "0101")
+        when:
+            List<String> excludes = person1.logicalHashCodeExcludes
+        then:
+            excludes != null && excludes == ["dummyField"]
+    }
+
+    /**
+     *  Test equality using the @LogicalEqualsAndHashCode annotation and logicalHashCode()
+     */
+    void "test comparator equality using @LogicalEqualsAndHashCode and logicalHashCode()"() {
+        given:
+            // dummyField ie excluded in the annotation
+            Person person1 = new Person(uid: "1", dateOfBirthMMDD: "0101", dummyField: "ABC")
+            Person person1same = new Person(uid: "1same", dateOfBirthMMDD: "0101", dummyField: "DEF")
+        when:
+            int compareResult = person1.logicalHashCode().compareTo(person1same.logicalHashCode())
+        then:
+            compareResult == 0
+    }
+
+    /**
+     *  Test equality using the @LogicalEqualsAndHashCode annotation and logicalEquals()
+     */
+    void "test comparator equality using @LogicalEqualsAndHashCode and logicalEquals()"() {
+        given:
+            // dummyField is excluded in the annotation
+            Person person1 = new Person(uid: "1", dateOfBirthMMDD: "0101", dummyField: "ABC")
+            Person person1same = new Person(uid: "1same", dateOfBirthMMDD: "0101", dummyField: "DEF")
+        when:
+            boolean theSame = person1.logicalEquals(person1same)
+        then:
+            theSame == true
+    }
+
     /**
      *  Test that the Comparator can compare objects with circular references in them.
      */

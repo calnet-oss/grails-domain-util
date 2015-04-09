@@ -1,5 +1,8 @@
 package edu.berkeley.util.domain
 
+import edu.berkeley.util.domain.transform.LogicalEqualsAndHashCode
+
+@LogicalEqualsAndHashCode
 class NameType {
 
     Integer id
