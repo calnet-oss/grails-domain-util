@@ -12,10 +12,10 @@ class CollectionUtil {
     }
 
     /**
-     * Duplicate source collection into target collection.  After this call,
+     * Synchronize target collection to match source collection.  After this call,
      * target will only contain what's in source.
      */
-    public static <T> void duplicate(Comparator<T> comparator, Collection<T> target, Collection<T> source) {
+    public static <T> void sync(Comparator<T> comparator, Collection<T> target, Collection<T> source) {
         if (target == null || source == null)
             throw new IllegalArgumentException("target or source cannot be null")
         // add anything in source that target doesn't already have

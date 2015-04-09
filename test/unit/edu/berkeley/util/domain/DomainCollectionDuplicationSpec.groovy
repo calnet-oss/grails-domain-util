@@ -45,7 +45,7 @@ class DomainCollectionDuplicationSpec extends Specification {
 
     /**
      * Test that the "target" collection becomes the "source" collection
-     * using CollectionUtil.duplicate().  This utilizes "logical comparison"
+     * using CollectionUtil.sync().  This utilizes "logical comparison"
      * of domain objects using the DomainLogicialComparator.
      */
     void "test duplicating collection"() {
@@ -54,7 +54,7 @@ class DomainCollectionDuplicationSpec extends Specification {
             person.setNames(getNameCollectionOld())
         when:
             // person.names should contain the new collection
-            CollectionUtil.duplicate(new DomainLogicalComparator<PersonName>(), person.names, getNameCollectionNew())
+            CollectionUtil.sync(new DomainLogicalComparator<PersonName>(), person.names, getNameCollectionNew())
         then:
             // We should have 1,2,3 now, but it can be ordered any way in the set so sort the results
             person.names*.id.sort() == [1, 2, 3]
