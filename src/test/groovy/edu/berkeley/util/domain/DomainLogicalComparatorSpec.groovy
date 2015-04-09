@@ -1,18 +1,15 @@
 package edu.berkeley.util.domain
 
-import grails.test.mixin.TestMixin
-import grails.test.mixin.support.GrailsUnitTestMixin
 import spock.lang.Specification
 
-@TestMixin(GrailsUnitTestMixin)
 class DomainLogicalComparatorSpec extends Specification {
 
     private PersonName getName1() {
-        return new PersonName(id: "pn1", nameType: new NameType(id: "nt1", typeName: "testType1"), fullName: "John M Smith")
+        return new PersonName(id: 1, nameType: new NameType(id: 1, typeName: "testType1"), fullName: "John M Smith")
     }
 
     private PersonName getName2() {
-        return new PersonName(id: "pn2", nameType: new NameType(id: "nt2", typeName: "testType2"), fullName: "John Mark Smith")
+        return new PersonName(id: 2, nameType: new NameType(id: 2, typeName: "testType2"), fullName: "John Mark Smith")
     }
 
     private LinkedHashSet getNameSet1() {

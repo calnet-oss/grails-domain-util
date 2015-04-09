@@ -5,6 +5,7 @@ import edu.berkeley.util.domain.transform.LogicalEqualsAndHashCode
 @LogicalEqualsAndHashCode
 class NameType {
 
+    long version
     Integer id
     String typeName
 

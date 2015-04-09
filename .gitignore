@@ -1,11 +1,8 @@
-plugin.xml
-target
+build
 .idea
 *.iml
 *.ipr
 *.iws
-atlassian-ide-plugin.xml
-.classpath
-.project
 *.zip
 *.sha1
+.gradle

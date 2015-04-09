@@ -1,0 +1,59 @@
+apply plugin: 'groovy'
+apply plugin: 'maven'
+apply plugin: 'distribution'
+
+project.group = 'edu.berkeley.calnet.libs'
+project.version = '0.2-SNAPSHOT'
+
+repositories {
+    mavenLocal()
+    maven {
+        url 'https://maven.calnet.berkeley.edu/artifactory/all/'
+        credentials {
+          username calnet_deploy_user
+          password calnet_deploy_password
+        }
+    }
+}
+
+dependencies {
+    compile 'org.codehaus.groovy:groovy-all:2.4.3'
+    compile 'org.grails:grails-core:2.4.4'
+    testCompile 'org.spockframework:spock-core:0.7-groovy-2.0'
+    //testCompile 'junit:junit:4.12'
+}
+
+jar {
+    baseName = rootProject.name
+    version = project.version
+}
+
+distributions {
+    main {
+        baseName = rootProject.name
+        contents {
+            from fileTree(dir: '.', includes: [
+                    'build/libs/**',
+                    'src/**',
+                    'gradle/**',
+                    'gradelw', 'gradlew.bat',
+                    'build.gradle', 'settings.gradle', 'gradle.properties'
+            ])
+        }
+    }
+}
+distZip.dependsOn jar
+distTar.dependsOn jar
+
+uploadArchives {
+    repositories {
+        mavenDeployer {
+            repository(url: calnet_deploy_contextUrl + '/' + calnet_deploy_repo) {
+                authentication(
+                        userName: calnet_deploy_user,
+                        password: calnet_deploy_password
+                )
+            }
+        }
+    }
+}

@@ -5,10 +5,12 @@ import edu.berkeley.util.domain.transform.LogicalEqualsAndHashCode
 @LogicalEqualsAndHashCode
 class PersonName {
 
+    long version
     Long id
     NameType nameType
     String fullName
 
+    Person person
     static belongsTo = [person: Person]
 
     static constraints = {

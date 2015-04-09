@@ -1,7 +1,7 @@
-Grails Domain Utility Plugin
-============================
+Grails Domain Utility Library
+=============================
 
-This plugin offers utility classes for handling domain class instances.
+This library offers utility classes for handling domain class instances.
 
 Primarily:
   * `DomainLogicalComparator` and `CollectionUtil`
