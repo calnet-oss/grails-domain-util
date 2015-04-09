@@ -5,7 +5,7 @@ import grails.test.mixin.support.GrailsUnitTestMixin
 import spock.lang.Specification
 
 @TestMixin(GrailsUnitTestMixin)
-class DomainCollectionDuplicationSpec extends Specification {
+class DomainCollectionSyncSpec extends Specification {
 
     private PersonName newPersonName(Long identifier, NameType nameType, String fullName) {
         PersonName name = new PersonName(nameType: nameType, fullName: fullName)
