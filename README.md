@@ -26,5 +26,5 @@ class MyDomainClass {
 
 Then to logically compare two instances of `MyDomainClass`:
 ```
-  boolean isLogicallyEqual = myDomainInstance1.logicallyEquals(myDomainInstance2)
+  boolean isLogicallyEqual = myDomainInstance1.logicalEquals(myDomainInstance2)
 ```
