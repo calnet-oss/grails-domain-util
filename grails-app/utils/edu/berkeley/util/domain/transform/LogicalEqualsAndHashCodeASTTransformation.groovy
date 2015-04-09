@@ -81,7 +81,7 @@ class LogicalEqualsAndHashCodeASTTransformation extends AbstractASTTransformatio
 
         cNode.addField(new FieldNode(
                 hasExistingField ? "_$fieldName" : fieldName,
-                ACC_PRIVATE | ACC_FINAL | ACC_STATIC,
+                (hasExistingField ? ACC_PRIVATE : ACC_PUBLIC) | ACC_FINAL | ACC_STATIC,
                 LIST_TYPE,
                 cNode,
                 callX(
