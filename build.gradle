@@ -9,6 +9,10 @@ repositories {
     mavenLocal()
     maven {
         url 'https://maven.calnet.berkeley.edu/artifactory/all/'
+        credentials {
+          username calnet_deploy_user
+          password calnet_deploy_password
+        }
     }
 }
 
@@ -16,7 +20,7 @@ dependencies {
     compile 'org.codehaus.groovy:groovy-all:2.4.3'
     compile 'org.grails:grails-core:2.4.4'
     testCompile 'org.spockframework:spock-core:0.7-groovy-2.0'
-    testCompile 'junit:junit:4.12'
+    //testCompile 'junit:junit:4.12'
 }
 
 jar {

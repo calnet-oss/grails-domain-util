@@ -1,10 +1,7 @@
 package edu.berkeley.util.domain
 
-import grails.test.mixin.TestMixin
-import grails.test.mixin.support.GrailsUnitTestMixin
 import spock.lang.Specification
 
-@TestMixin(GrailsUnitTestMixin)
 class DomainLogicalComparatorSpec extends Specification {
 
     private PersonName getName1() {

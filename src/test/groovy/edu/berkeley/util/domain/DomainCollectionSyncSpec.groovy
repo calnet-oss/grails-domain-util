@@ -1,10 +1,7 @@
 package edu.berkeley.util.domain
 
-import grails.test.mixin.TestMixin
-import grails.test.mixin.support.GrailsUnitTestMixin
 import spock.lang.Specification
 
-@TestMixin(GrailsUnitTestMixin)
 class DomainCollectionSyncSpec extends Specification {
 
     private PersonName newPersonName(Long identifier, NameType nameType, String fullName) {
