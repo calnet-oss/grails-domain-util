@@ -1,6 +1,7 @@
 package edu.berkeley.util.domain.transform
 
 import edu.berkeley.util.domain.DomainLogicalComparator
+import edu.berkeley.util.domain.LogicalEqualsAndHashCodeInterface
 import org.codehaus.groovy.ast.*
 import org.codehaus.groovy.ast.expr.ConstantExpression
 import org.codehaus.groovy.ast.expr.Expression
@@ -36,6 +37,7 @@ class LogicalEqualsAndHashCodeASTTransformation extends AbstractASTTransformatio
     private static final ClassNode STRING_TYPE = makeClassSafe(String.class);
     private static final ClassNode LIST_TYPE = makeClassSafeWithGenerics(List.class, STRING_TYPE);
     private static final ClassNode DOMAINLOGICALCOMPARATOR_TYPE = make(DomainLogicalComparator.class)
+    private static final ClassNode INTERFACE_TYPE = make(LogicalEqualsAndHashCodeInterface.class)
     private static final String EXCLUDES_FIELD = "logicalHashCodeExcludes"
     private static final String INCLUDES_FIELD = "logicalHashCodeIncludes"
 
@@ -59,6 +61,8 @@ class LogicalEqualsAndHashCodeASTTransformation extends AbstractASTTransformatio
             createIncludeExcludeFields(cNode, excludes, includes);
             createHashCode(cNode);
             createEquals(cNode);
+            // add implements LogicalEqualsAndHashCodeInterface
+            addInterface(cNode);
         }
     }
 
@@ -192,5 +196,9 @@ class LogicalEqualsAndHashCodeASTTransformation extends AbstractASTTransformatio
         body.addStatement(returnS(eqX(_result, new ConstantExpression(0, true))))
 
         return body
+    }
+
+    public static void addInterface(ClassNode cNode) {
+        cNode.addInterface(INTERFACE_TYPE)
     }
 }

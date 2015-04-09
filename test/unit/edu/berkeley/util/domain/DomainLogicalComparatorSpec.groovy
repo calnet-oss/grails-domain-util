@@ -3,6 +3,7 @@ package edu.berkeley.util.domain
 import grails.test.mixin.TestMixin
 import grails.test.mixin.support.GrailsUnitTestMixin
 import spock.lang.Specification
+import edu.berkeley.util.domain.LogicalEqualsAndHashCodeInterface
 
 @TestMixin(GrailsUnitTestMixin)
 class DomainLogicalComparatorSpec extends Specification {
@@ -171,6 +172,16 @@ class DomainLogicalComparatorSpec extends Specification {
             boolean theSame = person1.logicalEquals(person1same)
         then:
             theSame == true
+    }
+
+    void "test @LogicalEqualsAndHashCode instance implements LogicalEqualsAndHashCodeInterface()"() {
+        given:
+            // dummyField is excluded in the annotation
+            Person person1 = new Person(uid: "1")
+        when:
+            boolean implementsInterface = person1 instanceof LogicalEqualsAndHashCodeInterface
+        then:
+            implementsInterface == true
     }
 
     /**
