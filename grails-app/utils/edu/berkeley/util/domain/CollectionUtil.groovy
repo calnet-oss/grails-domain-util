@@ -18,12 +18,7 @@ class CollectionUtil {
     public static boolean contains(Collection<LogicalEqualsAndHashCodeInterface> collection, LogicalEqualsAndHashCodeInterface o) {
         // if comparator.compare returns 0 for any element, then the
         // object is in the collection
-        for (def val in collection) {
-            println("${val.properties} logically equals ${o.properties}: ${val.logicalEquals(o)}")
-        }
-        def result = collection.any { it.logicalEquals(o) }
-        println("returning ${result} for ${o.id} in ${collection*.id}")
-        return result
+        return collection.any { it.logicalEquals(o) }
     }
 
     /**
