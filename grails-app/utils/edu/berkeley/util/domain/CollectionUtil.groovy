@@ -12,8 +12,23 @@ class CollectionUtil {
     }
 
     /**
-     * Synchronize target collection to match source collection.  After this call,
-     * target will only contain what's in source.
+     * Implements Collection.contains() but using logicalEquals() to do the
+     * equality check.
+     */
+    public static boolean contains(Collection<LogicalEqualsAndHashCodeInterface> collection, LogicalEqualsAndHashCodeInterface o) {
+        // if comparator.compare returns 0 for any element, then the
+        // object is in the collection
+        for (def val in collection) {
+            println("${val.properties} logically equals ${o.properties}: ${val.logicalEquals(o)}")
+        }
+        def result = collection.any { it.logicalEquals(o) }
+        println("returning ${result} for ${o.id} in ${collection*.id}")
+        return result
+    }
+
+    /**
+     * Synchronize target collection to match source collection.  After this
+     * call, target will only contain what's in source.
      */
     public static <T> void sync(Comparator<T> comparator, Collection<T> target, Collection<T> source) {
         if (target == null || source == null)
@@ -28,6 +43,29 @@ class CollectionUtil {
         // remove anything from target that's not in source
         target.collect().each {
             if (!contains(comparator, source, it)) {
+                if (!target.remove(it))
+                    throw new RuntimeException("remove() failed on $target for $it")
+            }
+        }
+    }
+
+    /**
+     * Synchronize target collection to match source collection.  After this
+     * call, target will only contain what's in source.
+     */
+    public static void sync(Collection<LogicalEqualsAndHashCodeInterface> target, Collection<LogicalEqualsAndHashCodeInterface> source) {
+        if (target == null || source == null)
+            throw new IllegalArgumentException("target or source cannot be null")
+        // add anything in source that target doesn't already have
+        source.collect().each {
+            if (!contains(target, it)) {
+                if (!target.add(it))
+                    throw new RuntimeException("add() failed on $target for $it")
+            }
+        }
+        // remove anything from target that's not in source
+        target.collect().each {
+            if (!contains(source, it)) {
                 if (!target.remove(it))
                     throw new RuntimeException("remove() failed on $target for $it")
             }

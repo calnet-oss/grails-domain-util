@@ -48,7 +48,7 @@ class DomainCollectionSyncSpec extends Specification {
      * using CollectionUtil.sync().  This utilizes "logical comparison"
      * of domain objects using the DomainLogicialComparator.
      */
-    void "test duplicating collection"() {
+    void "test syncing collection using comparator"() {
         given:
             Person person = new Person(uid: "1", dateOfBirthMMDD: "0101")
             person.setNames(getNameCollectionOld())
@@ -56,7 +56,25 @@ class DomainCollectionSyncSpec extends Specification {
             // person.names should contain the new collection
             CollectionUtil.sync(new DomainLogicalComparator<PersonName>(), person.names, getNameCollectionNew())
         then:
-            // We should have 1,2,3 now, but it can be ordered any way in the set so sort the results
+            // We should have 1,2,3 now, but it can be ordered any way in
+            // the set so sort the results
+            person.names*.id.sort() == [1, 2, 3]
+    }
+
+    /**
+     * Test that the "target" collection becomes the "source" collection
+     * using CollectionUtil.sync().  This utilizes logicalEquals().
+     */
+    void "test syncing collection using logicalEquals()"() {
+        given:
+            Person person = new Person(uid: "1", dateOfBirthMMDD: "0101")
+            person.setNames(getNameCollectionOld())
+        when:
+            // person.names should contain the new collection
+            CollectionUtil.sync(person.names, getNameCollectionNew())
+        then:
+            // We should have 1,2,3 now, but it can be ordered any way in
+            // the set so sort the results
             person.names*.id.sort() == [1, 2, 3]
     }
 }
