@@ -66,4 +66,18 @@ class CollectionUtil {
             }
         }
     }
+
+    public static boolean logicallyEquivalent(Collection<LogicalEqualsAndHashCodeInterface> c1, Collection<LogicalEqualsAndHashCodeInterface> c2) {
+        // check that c1 has everything in c2
+        for (LogicalEqualsAndHashCodeInterface obj in c2) {
+            if (!contains(c1, obj))
+                return false
+        }
+        // check that c1 doesn't have anything that's not in c2
+        for (LogicalEqualsAndHashCodeInterface obj in c1) {
+            if (!contains(c2, obj))
+                return false
+        }
+        return true
+    }
 }
