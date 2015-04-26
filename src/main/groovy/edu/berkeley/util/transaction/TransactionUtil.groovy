@@ -1,8 +1,8 @@
 package edu.berkeley.util.transaction
 
-import grails.transaction.Transactional
 import org.hibernate.SessionFactory
 import org.springframework.transaction.annotation.Propagation
+import org.springframework.transaction.annotation.Transactional
 
 /**
  * Methods for managing a transaction.
@@ -20,7 +20,7 @@ class TransactionUtil {
      * @return The optional return value from the closure.
      */
     static Object withTransaction(Closure closure) {
-        new TransactionUtil().doTransaction(closure)
+        return new TransactionUtil().doTransaction(closure)
     }
 
     /**
