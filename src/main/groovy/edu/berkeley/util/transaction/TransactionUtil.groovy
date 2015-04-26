@@ -1,6 +1,7 @@
 package edu.berkeley.util.transaction
 
 import grails.transaction.Transactional
+import org.hibernate.SessionFactory
 import org.springframework.transaction.annotation.Propagation
 
 /**
@@ -36,7 +37,7 @@ class TransactionUtil {
      *
      * @return The optional return value from the closure.
      */
-    static Object withClearingTransaction(def sessionFactory, Closure closure) {
+    static Object withClearingTransaction(SessionFactory sessionFactory, Closure closure) {
         if (!sessionFactory)
             throw new RuntimeException("sessionFactory cannot be null")
         Object result = withTransaction(closure)
@@ -58,6 +59,8 @@ class TransactionUtil {
      */
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception)
     protected Object doTransaction(Closure closure) {
+        if (!closure)
+            throw new RuntimeException("closure cannot be null")
         return closure()
     }
 }
