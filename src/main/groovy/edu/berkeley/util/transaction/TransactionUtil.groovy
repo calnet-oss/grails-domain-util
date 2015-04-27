@@ -15,12 +15,16 @@ class TransactionUtil {
      * committed upon succesful closure completion.  The transactios will be
      * rolled back on any Exception thrown and the exception will propagate.
      *
+     * @param sessionFactory A Hibernate sessionFactory.  sessionFactory can
+     *        be injected into services and integration tsts.
      * @param closure The closure to execute within a new transaction.
      *
      * @return The optional return value from the closure.
      */
-    static Object withTransaction(Closure closure) {
-        return new TransactionUtil().doTransaction(closure)
+    static Object withTransaction(SessionFactory sessionFactory, Closure closure) {
+        if (!sessionFactory)
+            throw new RuntimeException("sessionFactory cannot be null")
+        return new TransactionUtil().doTransaction(sessionFactory, closure)
     }
 
     /**
@@ -40,7 +44,7 @@ class TransactionUtil {
     static Object withClearingTransaction(SessionFactory sessionFactory, Closure closure) {
         if (!sessionFactory)
             throw new RuntimeException("sessionFactory cannot be null")
-        Object result = withTransaction(closure)
+        Object result = withTransaction(sessionFactory, closure)
         if (!sessionFactory.currentSession) {
             throw new RuntimeException("Transaction has been committed but was unable to clear the Hibernate session because sessionFactory.getCurrentSession() returned null")
         }
@@ -53,14 +57,22 @@ class TransactionUtil {
         return result
     }
 
+    @Transactional(propagation = Propagation.NEVER)
+    protected Object doTransaction(SessionFactory sessionFactory, Closure closure) {
+      Object result = _doTransaction(sessionFactory, closure)
+      sessionFactory.currentSession.transaction.commit()
+      return result
+    }
+
     /**
      * Execute the closure within a new transaction.  Rollback for any
      * Exception.
      */
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception)
-    protected Object doTransaction(Closure closure) {
+    private Object _doTransaction(SessionFactory sessionFactory, Closure closure) {
         if (!closure)
             throw new RuntimeException("closure cannot be null")
-        return closure()
+        Object result = closure()
+        return result
     }
 }
