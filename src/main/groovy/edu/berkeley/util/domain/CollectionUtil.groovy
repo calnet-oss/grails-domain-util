@@ -24,22 +24,29 @@ class CollectionUtil {
     /**
      * Synchronize target collection to match source collection.  After this
      * call, target will only contain what's in source.
+     *
+     * Note this will call .delete() on any domain object removed from the
+     * target collection.  It will also flush the Hibernate session on any
+     * deletions.
      */
     public static <T> void sync(Comparator<T> comparator, Collection<T> target, Collection<T> source) {
         if (!target || !source)
             throw new IllegalArgumentException("target or source cannot be null")
-        // add anything in source that target doesn't already have
-        source.collect().each {
-            if (!contains(comparator, target, it)) {
-                if (!target.add(it))
-                    throw new RuntimeException("add() failed on $target for $it")
-            }
-        }
-        // remove anything from target that's not in source
+        // Remove anything from target that's not in source.
+        // Removals MUST come before additions.
         target.collect().each {
             if (!contains(comparator, source, it)) {
                 if (!target.remove(it))
                     throw new RuntimeException("remove() failed on $target for $it")
+                if (it.metaClass.pickMethod("delete"))
+                    it.delete(failOnError: true, flush: true)
+            }
+        }
+        // Add anything in source that target doesn't already have.
+        source.collect().each {
+            if (!contains(comparator, target, it)) {
+                if (!target.add(it))
+                    throw new RuntimeException("add() failed on $target for $it")
             }
         }
     }
@@ -47,22 +54,29 @@ class CollectionUtil {
     /**
      * Synchronize target collection to match source collection.  After this
      * call, target will only contain what's in source.
+     *
+     * Note this will call .delete() on any domain object removed from the
+     * target collection.  It will also flush the Hibernate session on any
+     * deletions.
      */
     public static void sync(Collection<LogicalEqualsAndHashCodeInterface> target, Collection<LogicalEqualsAndHashCodeInterface> source) {
         if (target == null || source == null)
             throw new IllegalArgumentException("target or source cannot be null")
-        // add anything in source that target doesn't already have
-        source.collect().each {
-            if (!contains(target, (LogicalEqualsAndHashCodeInterface)it)) {
-                if (!target.add(it))
-                    throw new RuntimeException("add() failed on $target for $it")
-            }
-        }
-        // remove anything from target that's not in source
+        // Remove anything from target that's not in source.
+        // Removals MUST come before additions.
         target.collect().each {
-            if (!contains(source, (LogicalEqualsAndHashCodeInterface)it)) {
+            if (!contains(source, (LogicalEqualsAndHashCodeInterface) it)) {
                 if (!target.remove(it))
                     throw new RuntimeException("remove() failed on $target for $it")
+                if (it.metaClass.pickMethod("delete"))
+                    it.delete(failOnError: true, flush: true)
+            }
+        }
+        // Add anything in source that target doesn't already have.
+        source.collect().each {
+            if (!contains(target, (LogicalEqualsAndHashCodeInterface) it)) {
+                if (!target.add(it))
+                    throw new RuntimeException("add() failed on $target for $it")
             }
         }
     }
