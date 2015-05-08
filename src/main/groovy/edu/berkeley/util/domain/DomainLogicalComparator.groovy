@@ -27,8 +27,8 @@ import java.security.MessageDigest
 @Slf4j
 class DomainLogicalComparator<T> implements Comparator<T> {
 
-    private List<String> includes
-    private List<String> excludes
+    List<String> includes
+    List<String> excludes
 
     /**
      *  HashCodeBuilder will build up a hashCode based on multiple
@@ -177,10 +177,10 @@ class DomainLogicalComparator<T> implements Comparator<T> {
      * equal.
      */
     public static int compare(T o1, T o2, List<String> _includes, List<String> _excludes) {
+        log.trace("Comparing ${o1.hashCode()} and ${o2.hashCode()}, includes=${_includes}, excludes=${_excludes}")
         int o1Hash = logicalHashCode(o1, _includes, _excludes)
         int o2Hash = logicalHashCode(o2, _includes, _excludes)
         int result = o1Hash.compareTo(o2Hash)
-        log.trace("Comparing ${o1.hashCode()} and ${o2.hashCode()}")
         log.trace("Hash ${o1.hashCode()}: $o1Hash")
         log.trace("Hash ${o2.hashCode()}: $o2Hash")
         log.trace("Result: ${o1.hashCode()}:$o1Hash and ${o2.hashCode()}:$o2Hash -> ${result}")
