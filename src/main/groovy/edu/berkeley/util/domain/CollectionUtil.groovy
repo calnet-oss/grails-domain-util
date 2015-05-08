@@ -38,7 +38,8 @@ class CollectionUtil {
             if (!contains(comparator, source, it)) {
                 if (!target.remove(it))
                     throw new RuntimeException("remove() failed on $target for $it")
-                it.delete(failOnError: true, flush: true)
+                if (it.metaClass.pickMethod("delete"))
+                    it.delete(failOnError: true, flush: true)
             }
         }
         // Add anything in source that target doesn't already have.
@@ -64,15 +65,16 @@ class CollectionUtil {
         // Remove anything from target that's not in source.
         // Removals MUST come before additions.
         target.collect().each {
-            if (!contains(source, (LogicalEqualsAndHashCodeInterface)it)) {
+            if (!contains(source, (LogicalEqualsAndHashCodeInterface) it)) {
                 if (!target.remove(it))
                     throw new RuntimeException("remove() failed on $target for $it")
-                it.delete(failOnError: true, flush: true)
+                if (it.metaClass.pickMethod("delete"))
+                    it.delete(failOnError: true, flush: true)
             }
         }
         // Add anything in source that target doesn't already have.
         source.collect().each {
-            if (!contains(target, (LogicalEqualsAndHashCodeInterface)it)) {
+            if (!contains(target, (LogicalEqualsAndHashCodeInterface) it)) {
                 if (!target.add(it))
                     throw new RuntimeException("add() failed on $target for $it")
             }
