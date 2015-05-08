@@ -15,8 +15,8 @@ class NameType {
 
     static mapping = {
         table name: "NameType"
-        version: false
-            id column: 'id', sqlType: 'SMALLINT'
-            typeName column: 'typeName', sqlType: 'VARCHAR(64)'
+        version false
+        id column: 'id', generator: 'assigned', sqlType: 'SMALLINT'
+        typeName column: 'typeName', sqlType: 'VARCHAR(64)'
     }
 }
