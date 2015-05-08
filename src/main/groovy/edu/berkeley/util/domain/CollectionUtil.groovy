@@ -1,5 +1,8 @@
 package edu.berkeley.util.domain
 
+import groovy.util.logging.Slf4j
+
+@Slf4j
 class CollectionUtil {
     /**
      * Implements Collection.contains() but using a Comparator to do the
@@ -21,6 +24,18 @@ class CollectionUtil {
         return collection.any { it.logicalEquals(o) }
     }
 
+    protected static <T> void removeElement(Collection<T> target, T element) {
+        if (!target.remove(element))
+            throw new RuntimeException("remove() failed on $target for $element")
+        // mark the object we removed as deleted
+        element.delete(failOnError: true, flush: true)
+    }
+
+    protected static <T> void addElement(Collection<T> target, T element) {
+        if (!target.add(element))
+            throw new RuntimeException("add() failed on $target for $element")
+    }
+
     /**
      * Synchronize target collection to match source collection.  After this
      * call, target will only contain what's in source.
@@ -36,17 +51,13 @@ class CollectionUtil {
         // Removals MUST come before additions.
         target.collect().each {
             if (!contains(comparator, source, it)) {
-                if (!target.remove(it))
-                    throw new RuntimeException("remove() failed on $target for $it")
-                if (it.metaClass.pickMethod("delete"))
-                    it.delete(failOnError: true, flush: true)
+                removeElement(target, it)
             }
         }
         // Add anything in source that target doesn't already have.
         source.collect().each {
             if (!contains(comparator, target, it)) {
-                if (!target.add(it))
-                    throw new RuntimeException("add() failed on $target for $it")
+                addElement(target, it)
             }
         }
     }
@@ -66,17 +77,13 @@ class CollectionUtil {
         // Removals MUST come before additions.
         target.collect().each {
             if (!contains(source, (LogicalEqualsAndHashCodeInterface) it)) {
-                if (!target.remove(it))
-                    throw new RuntimeException("remove() failed on $target for $it")
-                if (it.metaClass.pickMethod("delete"))
-                    it.delete(failOnError: true, flush: true)
+                removeElement(target, it)
             }
         }
         // Add anything in source that target doesn't already have.
         source.collect().each {
             if (!contains(target, (LogicalEqualsAndHashCodeInterface) it)) {
-                if (!target.add(it))
-                    throw new RuntimeException("add() failed on $target for $it")
+                addElement(target, it)
             }
         }
     }
