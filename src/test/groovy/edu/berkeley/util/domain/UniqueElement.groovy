@@ -3,26 +3,23 @@ package edu.berkeley.util.domain
 import edu.berkeley.util.domain.transform.LogicalEqualsAndHashCode
 
 @LogicalEqualsAndHashCode(excludes = ["person"])
-class PersonName {
-
+class UniqueElement {
     long version
     Long id
-    NameType nameType
-    String fullName
+    String name
 
     Person person
     static belongsTo = [person: Person]
 
     static constraints = {
-        fullName nullable: true
+        person nullable: false, unique: true
     }
 
     static mapping = {
-        table name: "PersonName"
+        table name: "UniqueElement"
         version false
-        id column: 'id', generator: 'assigned', sqlType: 'BIGINT'
+        id column: 'id', generator: 'sequence', params: [sequence: 'UniqueElement_seq'], sqlType: 'BIGINT'
         person column: 'uid', sqlType: 'VARCHAR(64)'
-        nameType column: 'nameTypeId', sqlType: 'SMALLINT'
-        fullName column: 'fullName', sqlType: 'VARCHAR(255)'
+        name column: 'name', sqlType: 'VARCHAR(64)'
     }
 }

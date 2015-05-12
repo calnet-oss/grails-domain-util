@@ -11,7 +11,8 @@ class Person {
     String dummyField
 
     Set<PersonName> names
-    static hasMany = [names: PersonName]
+    Set<UniqueElement> uniqueElements
+    static hasMany = [names: PersonName, uniqueElements: UniqueElement]
 
     static constraints = {
         dateOfBirthMMDD nullable: true
@@ -23,6 +24,7 @@ class Person {
         id name: 'uid', column: 'uid', generator: 'assigned', sqlType: 'VARCHAR(64)'
         dateOfBirthMMDD column: 'dateOfBirthMMDD', sqlType: 'CHAR(4)'
         names cascade: "all-delete-orphan"
+        uniqueElements cascade: "all-delete-orphan"
     }
 
     static transients = ['uid']
