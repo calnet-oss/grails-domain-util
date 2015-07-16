@@ -13,7 +13,7 @@ Primarily:
     marshalled using `edu.berkeley.render.json.converters.ExtendedJSON` from
     the `grails-render-json` plugin.
 
-== @LogicalEqualsAndHashCode and CollectionUtil.sync() ==
+== LogicalEqualsAndHashCode annotation and CollectionUtil.sync() ==
 
 The easiest way to use `DomainLogicalComparator` is with the
 `@LogicalEqualsAndHashCode` annotation.
@@ -50,7 +50,7 @@ for the `person1.names` set.  After `sync()`:
  * If `person1.names` had elements that `newNamesCollection` logically
    doesn't have, those elements will have been removed from `person1.names`.
 
-== @ConverterConfig ==
+== ConverterConfig annotation ==
 
 You can use the `@ConverterConfig` annotation to tell the `ExtendedJSON`
 converter which fields to include in or exclude from the marshalled JSON.
