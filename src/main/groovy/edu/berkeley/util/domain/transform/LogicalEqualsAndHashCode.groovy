@@ -27,7 +27,7 @@ import java.lang.annotation.Target
  * This annotation accepts the following parameters:
  *
  * excludes=[list of strings] - Optionally pass a list of field names that
- * should be exluded from comparison.
+ * should be excluded from comparison.
  *
  * includes=[list of strings] - Optionally pass a list of field names that
  * should only be included in the comparison.  (The primary key field will
