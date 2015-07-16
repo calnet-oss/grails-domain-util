@@ -1,8 +1,10 @@
 package edu.berkeley.util.domain
 
+import edu.berkeley.util.domain.transform.ConverterConfig
 import edu.berkeley.util.domain.transform.LogicalEqualsAndHashCode
 
 @LogicalEqualsAndHashCode(excludes = ["person"])
+@ConverterConfig(includes = ["version", "id", "nameType", "fullName"])
 class PersonName {
 
     long version

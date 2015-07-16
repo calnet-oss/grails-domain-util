@@ -1,8 +1,10 @@
 package edu.berkeley.util.domain
 
+import edu.berkeley.util.domain.transform.ConverterConfig
 import edu.berkeley.util.domain.transform.LogicalEqualsAndHashCode
 
 @LogicalEqualsAndHashCode(excludes = ["dummyField"])
+@ConverterConfig(excludes = ["dummyField"])
 class Person {
 
     long version
