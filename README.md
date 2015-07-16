@@ -59,7 +59,7 @@ Example domain class:
 ```
 import edu.berkeley.util.domain.transform.ConverterConfig
 
-@ConverterConfig(excludes = "sorObject')
+@ConverterConfig(excludes = ["sorObject"])
 class Person {
     Long id
     SORObject sorObject
