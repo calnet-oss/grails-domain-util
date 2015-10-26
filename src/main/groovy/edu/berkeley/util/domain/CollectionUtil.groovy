@@ -4,6 +4,10 @@ import groovy.util.logging.Slf4j
 
 @Slf4j
 class CollectionUtil {
+    static enum FlushMode {
+        NO_FLUSH, FLUSH
+    }
+
     /**
      * Implements Collection.contains() but using a Comparator to do the
      * equality check.
@@ -43,7 +47,13 @@ class CollectionUtil {
      * Note this will delete any domain object removed from the target
      * collection.  It will also flush the Hibernate session.
      */
-    public static <T> void sync(def obj, Collection<T> target, Collection<T> source, Closure<Boolean> containsClosure, Closure<Boolean> addClosure, Closure<Boolean> removeClosure) {
+    public static <T> void sync(def obj,
+                                Collection<T> target,
+                                Collection<T> source,
+                                FlushMode flushMode,
+                                Closure<Boolean> containsClosure,
+                                Closure<Boolean> addClosure,
+                                Closure<Boolean> removeClosure) {
         if (target == null)
             throw new IllegalArgumentException("target cannot be null")
         if (source == null)
@@ -53,18 +63,18 @@ class CollectionUtil {
         def deletedObjects = []
         target.collect().each {
             if (!containsClosure(source, it)) {
-                removeElement(target, it)
+                removeClosure(it)
                 deletedObjects.add(it)
             }
         }
-        postRemoveCheckpoint(obj, deletedObjects)
+        postRemoveCheckpoint(obj, deletedObjects, flushMode)
         // Add anything in source that target doesn't already have.
         source.collect().each {
             if (!containsClosure(target, it)) {
-                addElement(target, it)
+                addClosure(it)
             }
         }
-        postAddCheckpoint(obj)
+        postAddCheckpoint(obj, flushMode)
     }
 
     /**
@@ -74,10 +84,15 @@ class CollectionUtil {
      * Note this will delete any domain object removed from the target
      * collection.  It will also flush the Hibernate session.
      */
-    public static <T> void sync(def domainObj, Comparator<T> comparator, Collection<T> target, Collection<T> source) {
-        sync(domainObj, target, source, { Collection<T> _source, T targetElement ->
-            contains(comparator, _source, targetElement)
-        }, { element ->
+    public static <T> void sync(def domainObj,
+                                Comparator<T> comparator,
+                                Collection<T> target,
+                                Collection<T> source,
+                                FlushMode flushMode) {
+        sync(domainObj, target, source, flushMode,
+                { Collection<T> _source, T targetElement ->
+                    contains(comparator, _source, targetElement)
+                }, { element ->
             addElement(target, element)
         }, { element ->
             removeElement(target, element)
@@ -91,32 +106,18 @@ class CollectionUtil {
      * Note this will delete any domain object removed from the target
      * collection.  It will also flush the Hibernate session.
      */
-    public static void sync(def domainObj, Collection<LogicalEqualsAndHashCodeInterface> target, Collection<LogicalEqualsAndHashCodeInterface> source) {
-        sync(domainObj, target, source, { Collection<LogicalEqualsAndHashCodeInterface> _source, LogicalEqualsAndHashCodeInterface targetElement ->
-            contains(_source, (LogicalEqualsAndHashCodeInterface) targetElement)
-        }, { element ->
+    public static void sync(def domainObj,
+                            Collection<LogicalEqualsAndHashCodeInterface> target,
+                            Collection<LogicalEqualsAndHashCodeInterface> source,
+                            FlushMode flushMode) {
+        sync(domainObj, target, source, flushMode,
+                { Collection<LogicalEqualsAndHashCodeInterface> _source, LogicalEqualsAndHashCodeInterface targetElement ->
+                    contains(_source, (LogicalEqualsAndHashCodeInterface) targetElement)
+                }, { element ->
             addElement(target, element)
         }, { element ->
             removeElement(target, element)
         })
-    }
-
-    private static void postRemoveCheckpoint(def domainObj, def deletedObjects) {
-        domainObj.save(flush: true)
-        boolean refreshRequired = false
-        deletedObjects.each {
-            if (it?.id != null && it.getClass().get(it.id) != null) {
-                refreshRequired = true
-            } else if (it?.id == null) {
-                refreshRequired = true
-            }
-        }
-        if (refreshRequired)
-            domainObj.refresh()
-    }
-
-    private static void postAddCheckpoint(def domainObj) {
-        domainObj.save(flush: true)
     }
 
     /**
@@ -126,10 +127,38 @@ class CollectionUtil {
      * Note this will delete any domain object removed from the target
      * collection.  It will also flush the Hibernate session.
      */
-    public static void sync(def domainObj, Collection<LogicalEqualsAndHashCodeInterface> target, Collection<LogicalEqualsAndHashCodeInterface> source, Closure<Boolean> addClosure, Closure<Boolean> removeClosure) {
-        sync(domainObj, target, source, { Collection<LogicalEqualsAndHashCodeInterface> _source, LogicalEqualsAndHashCodeInterface targetElement ->
-            contains(_source, (LogicalEqualsAndHashCodeInterface) targetElement)
-        }, addClosure, removeClosure)
+    public static void sync(def domainObj,
+                            Collection<LogicalEqualsAndHashCodeInterface> target,
+                            Collection<LogicalEqualsAndHashCodeInterface> source,
+                            FlushMode flushMode,
+                            Closure<Boolean> addClosure,
+                            Closure<Boolean> removeClosure) {
+        sync(domainObj, target, source, flushMode,
+                { Collection<LogicalEqualsAndHashCodeInterface> _source, LogicalEqualsAndHashCodeInterface targetElement ->
+                    contains(_source, (LogicalEqualsAndHashCodeInterface) targetElement)
+                }, addClosure, removeClosure)
+    }
+
+    private static void postRemoveCheckpoint(def domainObj, def deletedObjects, FlushMode flushMode) {
+        if (flushMode == FlushMode.FLUSH) {
+            domainObj.save(flush: true)
+            boolean refreshRequired = false
+            deletedObjects.each {
+                if (it?.id != null && it.getClass().get(it.id) != null) {
+                    refreshRequired = true
+                } else if (it?.id == null) {
+                    refreshRequired = true
+                }
+            }
+            if (refreshRequired)
+                domainObj.refresh()
+        }
+    }
+
+    private static void postAddCheckpoint(def domainObj, FlushMode flushMode) {
+        if (flushMode == FlushMode.FLUSH) {
+            domainObj.save(flush: true)
+        }
     }
 
     public static boolean logicallyEquivalent(Collection<LogicalEqualsAndHashCodeInterface> c1, Collection<LogicalEqualsAndHashCodeInterface> c2) {
