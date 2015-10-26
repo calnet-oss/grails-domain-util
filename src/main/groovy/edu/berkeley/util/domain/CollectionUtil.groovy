@@ -99,14 +99,15 @@ class CollectionUtil {
      * target collection.  It will also flush the Hibernate session on any
      * deletions.
      */
-    public static void sync(Collection<LogicalEqualsAndHashCodeInterface> target, Collection<LogicalEqualsAndHashCodeInterface> source, Closure addClosure, Closure removeClosure) {
+    public static void sync(Collection<LogicalEqualsAndHashCodeInterface> target, Collection<LogicalEqualsAndHashCodeInterface> source, Closure<Boolean> addClosure, Closure<Boolean> removeClosure) {
         if (source == null)
             throw new IllegalArgumentException("source cannot be null")
         // Remove anything from target that's not in source.
         // Removals MUST come before additions.
         target.collect().each {
             if (!contains(source, (LogicalEqualsAndHashCodeInterface) it)) {
-                removeClosure(it)
+                if (!removeClosure(it))
+                    throw new RuntimeException("remove closure failed for $it")
                 // mark the object we removed as deleted
                 it.delete(failOnError: true, flush: true)
             }
@@ -114,7 +115,8 @@ class CollectionUtil {
         // Add anything in source that target doesn't already have.
         source.collect().each {
             if (!contains(target, (LogicalEqualsAndHashCodeInterface) it)) {
-                addClosure(it)
+                if (!addClosure(it))
+                    throw new RuntimeException("add closure failed for $it")
             }
         }
     }
