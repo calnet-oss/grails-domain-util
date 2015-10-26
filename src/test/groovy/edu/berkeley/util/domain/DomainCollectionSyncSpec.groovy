@@ -80,7 +80,7 @@ class DomainCollectionSyncSpec extends Specification {
         when:
             assert person.names*.id.sort() == [1, 2, 11, 22]
             // person.names should contain the new collection
-            CollectionUtil.sync(person, new DomainLogicalComparator<PersonName>(excludes: ["person"]), person.names, getNameCollectionNew(person))
+            CollectionUtil.sync(person, new DomainLogicalComparator<PersonName>(excludes: ["person"]), person.names, getNameCollectionNew(person), CollectionUtil.FlushMode.NO_FLUSH)
             person.save(opts)
         then:
             // We should have 1,2,3 now, but it can be ordered any way in
@@ -98,7 +98,7 @@ class DomainCollectionSyncSpec extends Specification {
         when:
             assert person.names*.id.sort() == [1, 2, 11, 22]
             // person.names should contain the new collection
-            CollectionUtil.sync(person, person.names, getNameCollectionNew(person))
+            CollectionUtil.sync(person, person.names, getNameCollectionNew(person), CollectionUtil.FlushMode.NO_FLUSH)
             person.save(opts)
         then:
             // We should have 1,2,3 now, but it can be ordered any way in
@@ -117,7 +117,7 @@ class DomainCollectionSyncSpec extends Specification {
         when:
             assert person.names*.id.sort() == [1, 2, 11, 22]
             // person.names should contain the new collection
-            CollectionUtil.sync(person, person.names, getNameCollectionNew(person), {
+            CollectionUtil.sync(person, person.names, getNameCollectionNew(person), CollectionUtil.FlushMode.NO_FLUSH, {
                 // add closure
                 person.addToNames(it)
             }, {
@@ -144,7 +144,7 @@ class DomainCollectionSyncSpec extends Specification {
             // create a new collection with a different unique element
             HashSet<UniqueElement> newCollection = new HashSet<UniqueElement>()
             newCollection.add(new UniqueElement(name: "test2", person: person))
-            CollectionUtil.sync(person, person.uniqueElements, newCollection)
+            CollectionUtil.sync(person, person.uniqueElements, newCollection, CollectionUtil.FlushMode.FLUSH)
             person.save(failOnError: true, flush: true)
             Closure<Boolean> testResult = {
                 Person.withNewSession {
