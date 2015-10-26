@@ -59,6 +59,16 @@ class DomainCollectionSyncSpec extends Specification {
         return set
     }
 
+    boolean testCollection(Person person, Closure<Collection> realValuesClosure, Collection expectedValues) {
+        Person.withNewSession {
+            person = person.refresh()
+            // We should have 1,2,3 now, but it can be ordered any way in
+            // the set so sort the results
+            assert realValuesClosure(person) == expectedValues
+        }
+        return true
+    }
+
     /**
      * Test that the "target" collection becomes the "source" collection
      * using CollectionUtil.sync().  This utilizes "logical comparison"
@@ -70,11 +80,12 @@ class DomainCollectionSyncSpec extends Specification {
         when:
             assert person.names*.id.sort() == [1, 2, 11, 22]
             // person.names should contain the new collection
-            CollectionUtil.sync(new DomainLogicalComparator<PersonName>(excludes: ["person"]), person.names, getNameCollectionNew(person))
+            CollectionUtil.sync(person, new DomainLogicalComparator<PersonName>(excludes: ["person"]), person.names, getNameCollectionNew(person))
+            person.save(opts)
         then:
             // We should have 1,2,3 now, but it can be ordered any way in
             // the set so sort the results
-            person.names*.id.sort() == [1, 2, 3]
+            testCollection(person, { _person -> _person.names*.id.sort() }, [1, 2, 3])
     }
 
     /**
@@ -87,11 +98,12 @@ class DomainCollectionSyncSpec extends Specification {
         when:
             assert person.names*.id.sort() == [1, 2, 11, 22]
             // person.names should contain the new collection
-            CollectionUtil.sync(person.names, getNameCollectionNew(person))
+            CollectionUtil.sync(person, person.names, getNameCollectionNew(person))
+            person.save(opts)
         then:
             // We should have 1,2,3 now, but it can be ordered any way in
             // the set so sort the results
-            person.names*.id.sort() == [1, 2, 3]
+            testCollection(person, { _person -> _person.names*.id.sort() }, [1, 2, 3])
     }
 
     /**
@@ -105,17 +117,18 @@ class DomainCollectionSyncSpec extends Specification {
         when:
             assert person.names*.id.sort() == [1, 2, 11, 22]
             // person.names should contain the new collection
-            CollectionUtil.sync(person.names, getNameCollectionNew(person), {
+            CollectionUtil.sync(person, person.names, getNameCollectionNew(person), {
                 // add closure
                 person.addToNames(it)
             }, {
                 // remove closure
                 person.removeFromNames(it)
             })
+            person.save(opts)
         then:
             // We should have 1,2,3 now, but it can be ordered any way in
             // the set so sort the results
-            person.names*.id.sort() == [1, 2, 3]
+            testCollection(person, { _person -> _person.names*.id.sort() }, [1, 2, 3])
     }
 
     void "test changing a collection that has a unique constraint"() {
@@ -124,19 +137,25 @@ class DomainCollectionSyncSpec extends Specification {
             UniqueElement ue = new UniqueElement(name: "test1", person: person)
             person.addToUniqueElements(ue)
             person.save(failOnError: true, flush: true)
-            person = Person.get("1")
+            person = person.refresh()
 
         when:
             assert ue.id && person.uniqueElements?.size() == 1
             // create a new collection with a different unique element
             HashSet<UniqueElement> newCollection = new HashSet<UniqueElement>()
             newCollection.add(new UniqueElement(name: "test2", person: person))
-            CollectionUtil.sync(person.uniqueElements, newCollection)
+            CollectionUtil.sync(person, person.uniqueElements, newCollection)
             person.save(failOnError: true, flush: true)
-            person = Person.get("1")
+            Closure<Boolean> testResult = {
+                Person.withNewSession {
+                    person = person.refresh()
+                    assert person.uniqueElements.size() == 1
+                    assert person.uniqueElements[0].name == "test2"
+                }
+                return true
+            }
 
         then:
-            person.uniqueElements.size() == 1
-            person.uniqueElements[0].name == "test2"
+            testResult()
     }
 }

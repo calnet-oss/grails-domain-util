@@ -9,8 +9,8 @@ class CollectionUtil {
      * equality check.
      */
     public static <T> boolean contains(Comparator<T> comparator, Collection<T> collection, T o) {
-        // if comparator.compare returns 0 for any element, then the
-        // object is in the collection
+        // if comparator.compare returns 0 for any element, then the object
+        // is in the collection
         return collection.any { !comparator.compare(it, o) }
     }
 
@@ -19,104 +19,117 @@ class CollectionUtil {
      * equality check.
      */
     public static boolean contains(Collection<LogicalEqualsAndHashCodeInterface> collection, LogicalEqualsAndHashCodeInterface o) {
-        // if comparator.compare returns 0 for any element, then the
-        // object is in the collection
-        return collection.any { it.logicalEquals(o) }
+        // if comparator.compare returns 0 for any element, then the object
+        // is in the collection
+        return collection.any { it && it.logicalEquals(o) }
     }
 
-    protected static <T> void removeElement(Collection<T> target, T element) {
+    protected static <T> boolean removeElement(Collection<T> target, T element) {
         if (!target.remove(element))
             throw new RuntimeException("remove() failed on $target for $element")
-        // mark the object we removed as deleted
-        element.delete(failOnError: true, flush: true)
+        return true
     }
 
-    protected static <T> void addElement(Collection<T> target, T element) {
+    protected static <T> boolean addElement(Collection<T> target, T element) {
         if (!target.add(element))
             throw new RuntimeException("add() failed on $target for $element")
+        return true
     }
 
     /**
      * Synchronize target collection to match source collection.  After this
      * call, target will only contain what's in source.
      *
-     * Note this will call .delete() on any domain object removed from the
-     * target collection.  It will also flush the Hibernate session on any
-     * deletions.
+     * Note this will delete any domain object removed from the target
+     * collection.  It will also flush the Hibernate session.
      */
-    public static <T> void sync(Comparator<T> comparator, Collection<T> target, Collection<T> source) {
-        if (!target || !source)
-            throw new IllegalArgumentException("target or source cannot be null")
-        // Remove anything from target that's not in source.
-        // Removals MUST come before additions.
-        target.collect().each {
-            if (!contains(comparator, source, it)) {
-                removeElement(target, it)
-            }
-        }
-        // Add anything in source that target doesn't already have.
-        source.collect().each {
-            if (!contains(comparator, target, it)) {
-                addElement(target, it)
-            }
-        }
-    }
-
-    /**
-     * Synchronize target collection to match source collection.  After this
-     * call, target will only contain what's in source.
-     *
-     * Note this will call .delete() on any domain object removed from the
-     * target collection.  It will also flush the Hibernate session on any
-     * deletions.
-     */
-    public static void sync(Collection<LogicalEqualsAndHashCodeInterface> target, Collection<LogicalEqualsAndHashCodeInterface> source) {
-        if (target == null || source == null)
-            throw new IllegalArgumentException("target or source cannot be null")
-        // Remove anything from target that's not in source.
-        // Removals MUST come before additions.
-        target.collect().each {
-            if (!contains(source, (LogicalEqualsAndHashCodeInterface) it)) {
-                removeElement(target, it)
-            }
-        }
-        // Add anything in source that target doesn't already have.
-        source.collect().each {
-            if (!contains(target, (LogicalEqualsAndHashCodeInterface) it)) {
-                addElement(target, it)
-            }
-        }
-    }
-
-    /**
-     * Synchronize target collection to match source collection.  After this
-     * call, target will only contain what's in source.
-     *
-     * This takes an add and remove closure that is called to add and delete
-     * elements from the target collection.
-     *
-     * Note this will call .delete() on any domain object removed from the
-     * target collection.  It will also flush the Hibernate session on any
-     * deletions.
-     */
-    public static void sync(Collection<LogicalEqualsAndHashCodeInterface> target, Collection<LogicalEqualsAndHashCodeInterface> source, Closure addClosure, Closure removeClosure) {
+    public static <T> void sync(def obj, Collection<T> target, Collection<T> source, Closure<Boolean> containsClosure, Closure<Boolean> addClosure, Closure<Boolean> removeClosure) {
+        if (target == null)
+            throw new IllegalArgumentException("target cannot be null")
         if (source == null)
             throw new IllegalArgumentException("source cannot be null")
         // Remove anything from target that's not in source.
         // Removals MUST come before additions.
+        def deletedObjects = []
         target.collect().each {
-            if (!contains(source, (LogicalEqualsAndHashCodeInterface) it)) {
-                removeClosure(it)
-                // mark the object we removed as deleted
-                it.delete(failOnError: true, flush: true)
+            if (!containsClosure(source, it)) {
+                removeElement(target, it)
+                deletedObjects.add(it)
             }
         }
+        postRemoveCheckpoint(obj, deletedObjects)
         // Add anything in source that target doesn't already have.
         source.collect().each {
-            if (!contains(target, (LogicalEqualsAndHashCodeInterface) it)) {
-                addClosure(it)
+            if (!containsClosure(target, it)) {
+                addElement(target, it)
             }
         }
+        postAddCheckpoint(obj)
+    }
+
+    /**
+     * Synchronize target collection to match source collection.  After this
+     * call, target will only contain what's in source.
+     *
+     * Note this will delete any domain object removed from the target
+     * collection.  It will also flush the Hibernate session.
+     */
+    public static <T> void sync(def domainObj, Comparator<T> comparator, Collection<T> target, Collection<T> source) {
+        sync(domainObj, target, source, { Collection<T> _source, T targetElement ->
+            contains(comparator, _source, targetElement)
+        }, { element ->
+            addElement(target, element)
+        }, { element ->
+            removeElement(target, element)
+        })
+    }
+
+    /**
+     * Synchronize target collection to match source collection.  After this
+     * call, target will only contain what's in source.
+     *
+     * Note this will delete any domain object removed from the target
+     * collection.  It will also flush the Hibernate session.
+     */
+    public static void sync(def domainObj, Collection<LogicalEqualsAndHashCodeInterface> target, Collection<LogicalEqualsAndHashCodeInterface> source) {
+        sync(domainObj, target, source, { Collection<LogicalEqualsAndHashCodeInterface> _source, LogicalEqualsAndHashCodeInterface targetElement ->
+            contains(_source, (LogicalEqualsAndHashCodeInterface) targetElement)
+        }, { element ->
+            addElement(target, element)
+        }, { element ->
+            removeElement(target, element)
+        })
+    }
+
+    private static void postRemoveCheckpoint(def domainObj, def deletedObjects) {
+        domainObj.save(flush: true)
+        boolean refreshRequired = false
+        deletedObjects.each {
+            if (it?.id != null && it.getClass().get(it.id) != null) {
+                refreshRequired = true
+            } else if (it?.id == null) {
+                refreshRequired = true
+            }
+        }
+        if (refreshRequired)
+            domainObj.refresh()
+    }
+
+    private static void postAddCheckpoint(def domainObj) {
+        domainObj.save(flush: true)
+    }
+
+    /**
+     * Synchronize target collection to match source collection.  After this
+     * call, target will only contain what's in source.
+     *
+     * Note this will delete any domain object removed from the target
+     * collection.  It will also flush the Hibernate session.
+     */
+    public static void sync(def domainObj, Collection<LogicalEqualsAndHashCodeInterface> target, Collection<LogicalEqualsAndHashCodeInterface> source, Closure<Boolean> addClosure, Closure<Boolean> removeClosure) {
+        sync(domainObj, target, source, { Collection<LogicalEqualsAndHashCodeInterface> _source, LogicalEqualsAndHashCodeInterface targetElement ->
+            contains(_source, (LogicalEqualsAndHashCodeInterface) targetElement)
+        }, addClosure, removeClosure)
     }
 
     public static boolean logicallyEquivalent(Collection<LogicalEqualsAndHashCodeInterface> c1, Collection<LogicalEqualsAndHashCodeInterface> c2) {
