@@ -94,6 +94,30 @@ class DomainCollectionSyncSpec extends Specification {
             person.names*.id.sort() == [1, 2, 3]
     }
 
+    /**
+     * Test that the "target" collection becomes the "source" collection
+     * using CollectionUtil.sync().  This utilizes logicalEquals() and
+     * an add and remove closure.
+     */
+    void "test syncing collection using logicalEquals() and add and remove closures"() {
+        given:
+            Person person = Person.get("1")
+        when:
+            assert person.names*.id.sort() == [1, 2, 11, 22]
+            // person.names should contain the new collection
+            CollectionUtil.sync(person.names, getNameCollectionNew(person), {
+                // add closure
+                person.addToNames(it)
+            }, {
+                // remove closure
+                person.removeFromNames(it)
+            })
+        then:
+            // We should have 1,2,3 now, but it can be ordered any way in
+            // the set so sort the results
+            person.names*.id.sort() == [1, 2, 3]
+    }
+
     void "test changing a collection that has a unique constraint"() {
         given:
             Person person = Person.get("1")

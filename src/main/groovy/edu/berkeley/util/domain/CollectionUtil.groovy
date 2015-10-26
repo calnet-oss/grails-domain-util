@@ -88,6 +88,37 @@ class CollectionUtil {
         }
     }
 
+    /**
+     * Synchronize target collection to match source collection.  After this
+     * call, target will only contain what's in source.
+     *
+     * This takes an add and remove closure that is called to add and delete
+     * elements from the target collection.
+     *
+     * Note this will call .delete() on any domain object removed from the
+     * target collection.  It will also flush the Hibernate session on any
+     * deletions.
+     */
+    public static void sync(Collection<LogicalEqualsAndHashCodeInterface> target, Collection<LogicalEqualsAndHashCodeInterface> source, Closure addClosure, Closure removeClosure) {
+        if (source == null)
+            throw new IllegalArgumentException("source cannot be null")
+        // Remove anything from target that's not in source.
+        // Removals MUST come before additions.
+        target.collect().each {
+            if (!contains(source, (LogicalEqualsAndHashCodeInterface) it)) {
+                removeClosure(it)
+                // mark the object we removed as deleted
+                it.delete(failOnError: true, flush: true)
+            }
+        }
+        // Add anything in source that target doesn't already have.
+        source.collect().each {
+            if (!contains(target, (LogicalEqualsAndHashCodeInterface) it)) {
+                addClosure(it)
+            }
+        }
+    }
+
     public static boolean logicallyEquivalent(Collection<LogicalEqualsAndHashCodeInterface> c1, Collection<LogicalEqualsAndHashCodeInterface> c2) {
         // check that c1 has everything in c2
         for (LogicalEqualsAndHashCodeInterface obj in c2) {
