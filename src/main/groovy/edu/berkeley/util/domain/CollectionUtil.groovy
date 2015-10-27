@@ -141,15 +141,14 @@ class CollectionUtil {
 
     private static void postRemoveCheckpoint(def domainObj, def deletedObjects, FlushMode flushMode) {
         if (flushMode == FlushMode.FLUSH) {
-            domainObj.save(flush: true)
             boolean refreshRequired = false
             deletedObjects.each {
-                if (it?.id != null && it.getClass().get(it.id) != null) {
-                    refreshRequired = true
-                } else if (it?.id == null) {
+                if (it == null || it?.isDirty()) {
+                    if (it != null) it.save()
                     refreshRequired = true
                 }
             }
+            domainObj.save(flush: true)
             if (refreshRequired)
                 domainObj.refresh()
         }
