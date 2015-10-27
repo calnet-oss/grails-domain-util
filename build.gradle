@@ -10,8 +10,8 @@ repositories {
     maven {
         url 'https://maven.calnet.berkeley.edu/artifactory/all/'
         credentials {
-          username calnet_deploy_user
-          password calnet_deploy_password
+            username calnet_deploy_user
+            password calnet_deploy_password
         }
     }
 }
