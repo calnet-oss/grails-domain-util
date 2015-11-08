@@ -149,8 +149,17 @@ class CollectionUtil {
                 }
             }
             domainObj.save(flush: true)
-            if (refreshRequired)
-                domainObj.refresh()
+            if (refreshRequired) {
+                // May get the following error: this instance does not yet
+                // exist as a row in the database.  I'm not sure if there's
+                // a better way to check for this.
+                try {
+                    domainObj.refresh()
+                }
+                catch (Exception e) {
+                    log.debug("refresh() exception, probably because $domainObj doesn't exist in database yet, which is ok: ${e.message}")
+                }
+            }
         }
     }
 

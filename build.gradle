@@ -3,7 +3,7 @@ apply plugin: 'maven'
 apply plugin: 'distribution'
 
 project.group = 'edu.berkeley.calnet.libs'
-project.version = '0.7-SNAPSHOT'
+project.version = '0.8-SNAPSHOT'
 
 repositories {
     mavenLocal()
