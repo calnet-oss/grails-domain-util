@@ -3,7 +3,9 @@ apply plugin: 'maven'
 apply plugin: 'distribution'
 
 project.group = 'edu.berkeley.calnet.libs'
-project.version = '0.8-SNAPSHOT'
+project.version = '0.9-SNAPSHOT'
+
+targetCompatibility = 1.7
 
 repositories {
     mavenLocal()
