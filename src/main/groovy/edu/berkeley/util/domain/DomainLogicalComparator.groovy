@@ -117,14 +117,17 @@ class DomainLogicalComparator<T> implements Comparator<T> {
      * @param o1 The object to produce a logical hash code for.
      */
     protected static void logicalHashCode(HashCodeBuilder hcb, Map<Integer, Boolean> visitMap, T o1, List<String> includes, List<String> excludes, int depth) {
-        if (o1 == null)
+        if (o1 == null) {
+            log.trace(getIndentation(depth) + "object is null")
             return
+        }
 
         // Prevent circular references by skipping those objects we've
         // already visited.  Important to use System.identityHashCode() as
         // the object's identity and the key to the map.
         int nativeIdentity = System.identityHashCode(o1)
         if (visitMap.containsKey(nativeIdentity)) {
+            log.trace(getIndentation(depth) + "object $nativeIdentity already visited")
             return
         }
         visitMap[nativeIdentity] = true
@@ -136,27 +139,40 @@ class DomainLogicalComparator<T> implements Comparator<T> {
         } else {
             DefaultGrailsDomainClass domainClass = new DefaultGrailsDomainClass(o1.getClass())
             for (def property in domainClass.getPersistentProperties()) {
+                String propertyName = property.name
                 // skip if it's the identity property in the domain instance
                 if (!property.isIdentity()) {
-                    String propertyName = property.name
-                    if (includes?.size() > 0 && !includes.contains(propertyName))
+                    if (includes?.size() > 0 && !includes.contains(propertyName)) {
+                        log.trace(getIndentation(depth) + "$propertyName is not in the includes for ${o1.getClass().name}")
                         continue
-                    if (excludes?.contains(propertyName))
+                    }
+                    if (excludes?.contains(propertyName)) {
+                        log.trace(getIndentation(depth) + "$propertyName is in the excludes for ${o1.getClass().name}")
                         continue
+                    }
                     if (o1.properties.containsKey(propertyName)) {
                         def val = o1.properties[propertyName]
                         if (val != null && (val instanceof Collection || isDomain(val))) {
                             // value is a Collection or a domain class that
                             // we'll recursively process
-                            log.trace(getIndentation(depth) + "Object ${o1.hashCode()}, type=${o1.getClass().getName()}: ${propertyName}: is a collection or domain object")
+                            log.trace(getIndentation(depth) + "Object ${System.identityHashCode(o1)}, type=${o1.getClass().getName()}: ${propertyName} ${System.identityHashCode(val)}: is a collection or domain object")
                             logicalHashCode(hcb, visitMap, val, getObjectIncludes(val), getObjectExcludes(val), depth + 1)
                         } else if (val != null) {
                             // append the property name and object to the
                             // hash code builder, which will update the hash
-                            log.trace(getIndentation(depth) + "Object ${o1.hashCode()}, type=${o1.getClass().getName()}: ${propertyName}: val=$val, hashCode=${val.hashCode()}")
+                            log.trace(getIndentation(depth) + "Object ${System.identityHashCode(o1)}, type=${o1.getClass().getName()}: ${propertyName}: val=$val, identityHashCode={System.identityHashCode(val)}, hashCode=${val.hashCode()}")
                             hcb.append(val, propertyName.hashCode())
                         }
+                        else {
+                            log.trace(getIndentation(depth) + "Property $propertyName is null")
+                        }
                     }
+                    else {
+                        log.trace(getIndentation(depth) + "Property $propertyName is not in the properties map of the object")
+                    }
+                }
+                else {
+                    log.trace(getIndentation(depth) + "Property $propertyName is an identity property")
                 }
             }
         }
