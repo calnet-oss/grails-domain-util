@@ -131,7 +131,7 @@ class DomainLogicalComparator<T> implements Comparator<T> {
 
         if (o1 instanceof Collection) {
             for (def val in o1) {
-                logicalHashCode(hcb, visitMap, val, includes, excludes, depth + 1)
+                logicalHashCode(hcb, visitMap, val, getObjectIncludes(val), getObjectExcludes(val), depth + 1)
             }
         } else {
             DefaultGrailsDomainClass domainClass = new DefaultGrailsDomainClass(o1.getClass())
@@ -149,7 +149,7 @@ class DomainLogicalComparator<T> implements Comparator<T> {
                             // value is a Collection or a domain class that
                             // we'll recursively process
                             log.trace(getIndentation(depth) + "Object ${o1.hashCode()}, type=${o1.getClass().getName()}: ${propertyName}: is a collection or domain object")
-                            logicalHashCode(hcb, visitMap, val, includes, excludes, depth + 1)
+                            logicalHashCode(hcb, visitMap, val, getObjectIncludes(val), getObjectExcludes(val), depth + 1)
                         } else if (val != null) {
                             // append the property name and object to the
                             // hash code builder, which will update the hash
@@ -189,5 +189,19 @@ class DomainLogicalComparator<T> implements Comparator<T> {
 
     public int compare(T o1, T o2) {
         return compare(o1, o2, includes, excludes)
+    }
+
+    private static List<String> getObjectIncludes(T o) {
+        if (o instanceof LogicalEqualsAndHashCodeInterface) {
+            return o.logicalHashCodeIncludes
+        }
+        return null
+    }
+
+    private static List<String> getObjectExcludes(T o) {
+        if (o instanceof LogicalEqualsAndHashCodeInterface) {
+            return o.logicalHashCodeExcludes
+        }
+        return null
     }
 }
