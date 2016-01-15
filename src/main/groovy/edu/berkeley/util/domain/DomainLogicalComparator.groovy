@@ -116,7 +116,7 @@ class DomainLogicalComparator<T> implements Comparator<T> {
      *        been visited in order to prevent circular reference loops.
      * @param o1 The object to produce a logical hash code for.
      */
-    protected static void logicalHashCode(HashCodeBuilder hcb, Map<Integer, Boolean> visitMap, T o1, List<String> includes, List<String> excludes, int depth) {
+    protected static <T> void logicalHashCode(HashCodeBuilder hcb, Map<Integer, Boolean> visitMap, T o1, List<String> includes, List<String> excludes, int depth) {
         if (o1 == null) {
             log.trace(getIndentation(depth) + "object is null")
             return
@@ -138,7 +138,7 @@ class DomainLogicalComparator<T> implements Comparator<T> {
             }
         } else {
             DefaultGrailsDomainClass domainClass = new DefaultGrailsDomainClass(o1.getClass())
-            for (def property in domainClass.getPersistentProperties()) {
+            for (def property in domainClass.getProperties()) {
                 String propertyName = property.name
                 // skip if it's the identity property in the domain instance
                 if (!property.isIdentity()) {
@@ -152,7 +152,7 @@ class DomainLogicalComparator<T> implements Comparator<T> {
                     }
                     if (o1.properties.containsKey(propertyName)) {
                         def val = o1.properties[propertyName]
-                        if (val != null && (val instanceof Collection || isDomain(val))) {
+                        if (val != null && property.persistent && (val instanceof Collection || isDomain(val))) {
                             // value is a Collection or a domain class that
                             // we'll recursively process
                             log.trace(getIndentation(depth) + "Object ${System.identityHashCode(o1)}, type=${o1.getClass().getName()}: ${propertyName} ${System.identityHashCode(val)}: is a collection or domain object")
@@ -162,16 +162,13 @@ class DomainLogicalComparator<T> implements Comparator<T> {
                             // hash code builder, which will update the hash
                             log.trace(getIndentation(depth) + "Object ${System.identityHashCode(o1)}, type=${o1.getClass().getName()}: ${propertyName}: val=$val, identityHashCode={System.identityHashCode(val)}, hashCode=${val.hashCode()}")
                             hcb.append(val, propertyName.hashCode())
-                        }
-                        else {
+                        } else {
                             log.trace(getIndentation(depth) + "Property $propertyName is null")
                         }
-                    }
-                    else {
+                    } else {
                         log.trace(getIndentation(depth) + "Property $propertyName is not in the properties map of the object")
                     }
-                }
-                else {
+                } else {
                     log.trace(getIndentation(depth) + "Property $propertyName is an identity property")
                 }
             }
@@ -207,14 +204,14 @@ class DomainLogicalComparator<T> implements Comparator<T> {
         return compare(o1, o2, includes, excludes)
     }
 
-    private static List<String> getObjectIncludes(T o) {
+    private static <T> List<String> getObjectIncludes(T o) {
         if (o instanceof LogicalEqualsAndHashCodeInterface) {
             return o.logicalHashCodeIncludes
         }
         return null
     }
 
-    private static List<String> getObjectExcludes(T o) {
+    private static <T> List<String> getObjectExcludes(T o) {
         if (o instanceof LogicalEqualsAndHashCodeInterface) {
             return o.logicalHashCodeExcludes
         }
