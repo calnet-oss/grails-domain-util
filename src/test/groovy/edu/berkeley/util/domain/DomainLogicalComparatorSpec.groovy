@@ -50,13 +50,15 @@ class DomainLogicalComparatorSpec extends Specification {
 
     /**
      *  Test that the Comparator correctly detects logical equality between
-     *  two different objects.
+     *  two same objects.
      */
     void "test comparator equality"() {
         given:
-            DomainLogicalComparator<Person> comparator = new DomainLogicalComparator<Person>()
+            DomainLogicalComparator<Person> comparator = new DomainLogicalComparator<Person>(includes: Person.logicalHashCodeIncludes, excludes: Person.logicalHashCodeExcludes)
         when:
-            int compareResult = comparator.compare(getPerson1(), getPerson1Same())
+            Person p1 = getPerson1()
+            Person ps = getPerson1Same()
+            int compareResult = comparator.compare(p1, ps)
         then:
             compareResult == 0
     }
@@ -66,7 +68,7 @@ class DomainLogicalComparatorSpec extends Specification {
      */
     void "test comparator inequality"() {
         given:
-            DomainLogicalComparator<Person> comparator = new DomainLogicalComparator<Person>()
+            DomainLogicalComparator<Person> comparator = new DomainLogicalComparator<Person>(includes: Person.logicalHashCodeIncludes, excludes: Person.logicalHashCodeExcludes)
         when:
             int compareResult = comparator.compare(getPerson1(), getPerson2())
         then:
@@ -108,7 +110,7 @@ class DomainLogicalComparatorSpec extends Specification {
             _person1.dummyField = "A"
             _person1same.dummyField = "B"
             DomainLogicalComparator<Person> comparatorWithoutExcludes = new DomainLogicalComparator<Person>()
-            DomainLogicalComparator<Person> comparatorWithExcludes = new DomainLogicalComparator<Person>(excludes: ['dummyField'])
+            DomainLogicalComparator<Person> comparatorWithExcludes = new DomainLogicalComparator<Person>(excludes: ['dummyField', 'uid'])
         when:
             int compareWithoutExcludesResult = comparatorWithoutExcludes.compare(_person1, _person1same)
             int compareWithExcludesResult = comparatorWithExcludes.compare(_person1, _person1same)
@@ -125,7 +127,7 @@ class DomainLogicalComparatorSpec extends Specification {
         when:
             List<String> excludes = person1.logicalHashCodeExcludes
         then:
-            excludes != null && excludes == ["dummyField"]
+            excludes != null && excludes == ["dummyField", "uid"]
     }
 
     void "test hash codes using @LogicalEqualsAndHashCode and logicalHashCode()"() {
@@ -215,7 +217,7 @@ class DomainLogicalComparatorSpec extends Specification {
      */
     void "test comparator with circular reference"() {
         given:
-            DomainLogicalComparator<Person> comparator = new DomainLogicalComparator<Person>()
+            DomainLogicalComparator<Person> comparator = new DomainLogicalComparator<Person>(includes: Person.logicalHashCodeIncludes, excludes: Person.logicalHashCodeExcludes)
             Person person1 = new Person(uid: "1")
             PersonName name = getName1()
             name.person = person1 // make a circular reference back to Person
