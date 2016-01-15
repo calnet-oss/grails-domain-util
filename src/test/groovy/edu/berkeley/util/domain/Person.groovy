@@ -3,7 +3,7 @@ package edu.berkeley.util.domain
 import edu.berkeley.util.domain.transform.ConverterConfig
 import edu.berkeley.util.domain.transform.LogicalEqualsAndHashCode
 
-@LogicalEqualsAndHashCode(excludes = ["dummyField"])
+@LogicalEqualsAndHashCode(excludes = ["dummyField", "uid"])
 @ConverterConfig(excludes = ["dummyField"])
 class Person {
 
