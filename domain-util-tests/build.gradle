@@ -1,0 +1,43 @@
+buildscript {
+    repositories {
+        jcenter()
+    }
+    dependencies {
+        classpath 'org.grails:grails-gradle-plugin:2.2.0.RC1'
+    }
+}
+
+apply plugin: 'grails'
+apply plugin: 'project-report'
+
+grails {
+    grailsVersion = '2.5.3'
+    groovyVersion = '2.4.4'
+}
+
+repositories {
+    jcenter()
+    grails.central()
+}
+
+dependencies {
+    bootstrap 'org.grails.plugins:tomcat:7.0.55.3'
+
+    //compile 'org.grails.plugins:scaffolding:2.1.2'
+    //compile 'org.grails.plugins:cache:1.1.8'
+
+    runtime('org.grails.plugins:hibernate4:4.3.10') {
+        exclude module: 'xml-apis'
+    }
+    //runtime 'org.grails.plugins:database-migration:1.4.0'
+    //runtime 'org.grails.plugins:jquery:1.11.1'
+    runtime 'org.grails.plugins:resources:1.2.14'
+
+    //Alternate to the resources plugin
+    //compile 'org.grails.plugins:asset-pipeline:2.5.7'
+
+    runtime "junit:junit:4.12"
+    runtime "org.spockframework:spock-core:1.0-groovy-2.4"
+    
+    compile project(":domain-util-library")
+}
