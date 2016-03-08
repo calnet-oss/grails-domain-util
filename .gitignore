@@ -1,4 +1,5 @@
 build
+buildPlugins
 .idea
 *.iml
 *.ipr
