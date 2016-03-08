@@ -1,4 +1,4 @@
-package edu.berkeley.util.domain
+package edu.berkeley.util.domain.test
 
 import edu.berkeley.util.domain.transform.LogicalEqualsAndHashCode
 
