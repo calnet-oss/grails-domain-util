@@ -1,13 +1,9 @@
 package edu.berkeley.util.domain
 
-import grails.test.mixin.TestMixin
-import grails.test.mixin.gorm.Domain
-import grails.test.mixin.hibernate.HibernateTestMixin
-import spock.lang.Specification
+import grails.test.spock.IntegrationSpec
+import edu.berkeley.util.domain.test.*
 
-@TestMixin(HibernateTestMixin)
-@Domain([Person, PersonName, NameType, UniqueElement])
-class DomainCollectionSyncSpec extends Specification {
+class DomainCollectionSyncSpec extends IntegrationSpec {
 
     private static def opts = [failOnError: true, flush: true]
 
@@ -17,7 +13,9 @@ class DomainCollectionSyncSpec extends Specification {
                 [id: 2, typeName: "testType2"],
                 [id: 3, typeName: "testType3"],
         ].each {
-            new NameType(it).save(opts)
+            NameType nt = new NameType(it)
+            nt.id = it.id
+            nt.save(opts)
         }
     }
 
@@ -36,6 +34,7 @@ class DomainCollectionSyncSpec extends Specification {
         ].each {
             it.person = person
             PersonName name = new PersonName(it)
+            name.id = it.id
             person.addToNames(name)
             name.save(failOnError: true)
         }
@@ -53,7 +52,8 @@ class DomainCollectionSyncSpec extends Specification {
         HashSet<PersonName> set = new HashSet<PersonName>();
         set.add(PersonName.get(1))
         set.add(PersonName.get(2))
-        PersonName newName = new PersonName(id: 3, person: person, nameType: NameType.get(3), fullName: "John Markus Smith")
+        PersonName newName = new PersonName(person: person, nameType: NameType.get(3), fullName: "John Markus Smith")
+        newName.id = 3
         newName.save(opts)
         set.add(newName)
         return set

@@ -1,6 +1,7 @@
 package edu.berkeley.util.domain
 
 import spock.lang.Specification
+import edu.berkeley.util.domain.test.*
 
 class DomainLogicalComparatorSpec extends Specification {
 
@@ -123,7 +124,7 @@ class DomainLogicalComparatorSpec extends Specification {
 
     void "test @LogicalEqualsAndHashCode excludes field"() {
         given:
-            Person person1 = new edu.berkeley.util.domain.Person(uid: "1", dateOfBirthMMDD: "0101")
+            Person person1 = new Person(uid: "1", dateOfBirthMMDD: "0101")
         when:
             List<String> excludes = person1.logicalHashCodeExcludes
         then:
