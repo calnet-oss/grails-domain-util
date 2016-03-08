@@ -1,0 +1,23 @@
+//
+// This is a Gradle multi-project build.
+// See settings.gradle for the subprojects.
+//
+// The two subprojects are:
+// domain-util-library - The main domain util library that is packaged as a jar.
+// grails-integration-test - A Grails App with integration tests using the jar.
+//
+// You ask: Why do this?  Because it's difficult to have AST transformers
+// and integration tests in the same project.
+//
+// Gradle Multi-Project documentation is here:
+// https://docs.gradle.org/current/userguide/multi_project_builds.html
+//
+
+allprojects {
+    version = '0.12-SNAPSHOT'
+
+    // Invoke with "gradle -q hello".
+    // This is here just to confirm we have the subproject names configured
+    // right.
+    task hello << {task -> println "I'm $task.project.name" }
+}
