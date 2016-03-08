@@ -3,6 +3,4 @@ build
 *.iml
 *.ipr
 *.iws
-*.zip
-*.sha1
 .gradle
