@@ -1,6 +1,13 @@
 buildscript {
     repositories {
-        jcenter()
+        mavenLocal()
+        maven {
+            url 'https://maven.calnet.berkeley.edu/artifactory/all/'
+            credentials {
+                username calnet_deploy_user
+                password calnet_deploy_password
+            }
+        }
     }
     dependencies {
         classpath 'org.grails:grails-gradle-plugin:2.2.0.RC1'
