@@ -1,8 +1,7 @@
 build
+buildPlugins
 .idea
 *.iml
 *.ipr
 *.iws
-*.zip
-*.sha1
 .gradle

@@ -1,6 +1,7 @@
 package edu.berkeley.util.domain
 
 import spock.lang.Specification
+import edu.berkeley.util.domain.test.*
 
 class ConverterConfigSpec extends Specification {
 
