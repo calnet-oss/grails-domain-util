@@ -21,3 +21,19 @@ allprojects {
     // right.
     task hello << {task -> println "I'm $task.project.name" }
 }
+
+// for the NoOpSpec to make Bamboo happy
+apply plugin: 'groovy'
+repositories {
+    mavenLocal()
+    maven {
+        url 'https://maven.calnet.berkeley.edu/artifactory/all/'
+        credentials {
+            username calnet_deploy_user
+            password calnet_deploy_password
+        }
+    }
+}
+dependencies {
+    testCompile "org.spockframework:spock-core:1.0-groovy-2.4"
+}
