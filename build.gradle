@@ -4,7 +4,7 @@
 //
 // The two subprojects are:
 // domain-util-library - The main domain util library that is packaged as a jar.
-// grails-integration-test - A Grails App with integration tests using the jar.
+// domain-util-tests - A Grails app with tests using the domain-util-library.
 //
 // You ask: Why do this?  Because it's difficult to have AST transformers
 // and integration tests in the same project.
