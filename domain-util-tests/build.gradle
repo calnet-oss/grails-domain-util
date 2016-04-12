@@ -18,7 +18,7 @@ apply plugin: 'grails'
 apply plugin: 'project-report'
 
 grails {
-    grailsVersion = '2.5.3'
+    grailsVersion = '2.5.4'
     groovyVersion = '2.4.4'
 }
 
