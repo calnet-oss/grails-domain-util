@@ -11,7 +11,8 @@ import java.lang.annotation.*
  * @ConverterConfig
  * class MyClass {
  *     ...
- *}* </code>
+ * }
+ * </code>
  *
  * This will make the class implement the IncludesExcludes interface, which
  * adds getIncludes() and getExcludes() methods.  These methods return lists
