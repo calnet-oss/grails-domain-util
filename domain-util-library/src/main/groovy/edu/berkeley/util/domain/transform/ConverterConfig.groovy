@@ -11,8 +11,7 @@ import java.lang.annotation.*
  * @ConverterConfig
  * class MyClass {
  *     ...
- * }
- * </code>
+ *}* </code>
  *
  * This will make the class implement the IncludesExcludes interface, which
  * adds getIncludes() and getExcludes() methods.  These methods return lists
@@ -34,6 +33,9 @@ import java.lang.annotation.*
  * 'excludes' and 'includes' cannot both be set in the same annotation. 
  * Either one of them is set or neither of them are set.
  *
+ * includeNulls=true or false - Indicates if null balues should be included
+ * in the converter output.  The default is false.
+ *
  * @see edu.berkeley.render.json.converters.ExtendedJSON , grails.converters.JSON, grails.converters.AbstractConverter
  */
 @Documented
@@ -41,9 +43,19 @@ import java.lang.annotation.*
 @Target([ElementType.TYPE])
 @GroovyASTTransformationClass("edu.berkeley.util.domain.transform.ConverterConfigASTTransformation")
 @interface ConverterConfig {
-    // fields to exclude from conversion
+    /**
+     * fields to exclude from conversion
+     */
     String[] excludes() default []
 
-    // fields to include for conversion
+    /**
+     * fields to include for conversion
+     */
     String[] includes() default []
+
+    /**
+     * If true, will add null values to the converter output.
+     * Default is false.
+     */
+    boolean includeNulls() default false
 }

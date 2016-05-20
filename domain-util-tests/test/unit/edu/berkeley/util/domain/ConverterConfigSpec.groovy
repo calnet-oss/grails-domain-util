@@ -30,4 +30,11 @@ class ConverterConfigSpec extends Specification {
             personName.includes == ["version", "id", "nameType", "fullName"]
             !personName.excludes.size()
     }
+
+    void "test @ConverterConfig includeNulls"() {
+        given:
+        PersonName personName = new PersonName(id: 1, nameType: new NameType(id: 1, typeName: "testType1"), fullName: "John M Smith")
+        expect:
+        personName.includeNulls == false
+    }
 }

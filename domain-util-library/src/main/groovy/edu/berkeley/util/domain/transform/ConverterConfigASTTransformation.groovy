@@ -38,10 +38,13 @@ class ConverterConfigASTTransformation extends AbstractASTTransformation {
     private static final ClassNode STRING_TYPE = makeClassSafe(String.class)
     private static final ClassNode LIST_TYPE = makeClassSafeWithGenerics(List.class, STRING_TYPE)
     private static final ClassNode INTERFACE_TYPE = make(IncludesExcludesInterface.class)
+    private static final ClassNode BOOLEAN_TYPE = make(Boolean.class)
     private static final String EXCLUDES_FIELD = "converterConfigExcludes"
     private static final String INCLUDES_FIELD = "converterConfigIncludes"
+    private static final String INCLUDE_NULLS_FIELD = "converterIncludeNulls"
     private static final String EXCLUDES_GETTER = "getExcludes"
     private static final String INCLUDES_GETTER = "getIncludes"
+    private static final String INCLUDE_NULLS_GETTER = "getIncludeNulls"
 
     public void visit(ASTNode[] nodes, SourceUnit source) {
         init(nodes, source)
@@ -54,17 +57,27 @@ class ConverterConfigASTTransformation extends AbstractASTTransformation {
             if (!checkNotInterface(cNode, MY_TYPE_NAME)) return
             List<String> excludes = getMemberList(anno, "excludes")
             List<String> includes = getMemberList(anno, "includes")
+            Boolean includeNulls = getMemberList(anno, "includeNulls")
             if (hasAnnotation(cNode, CanonicalASTTransformation.MY_TYPE)) {
                 AnnotationNode canonical = cNode.getAnnotations(CanonicalASTTransformation.MY_TYPE).get(0)
                 if (excludes == null || excludes.isEmpty()) excludes = getMemberList(canonical, "excludes")
                 if (includes == null || includes.isEmpty()) includes = getMemberList(canonical, "includes")
+                if (includeNulls == null) includeNulls = getMemberList(canonical, "includeNulls")
             }
+
             if (!checkIncludeExclude(anno, excludes, includes, MY_TYPE_NAME)) return
+
             // add the private static final List<String> fields containing
             // what the include/exclude annotation parameters hold
             createIncludeExcludeFields(cNode, excludes, includes)
+            // create the Boolean INCLUDE_NULLS_FIELD field
+            createIncludeNullsField(cNode, INCLUDE_NULLS_FIELD, includeNulls)
+
             // add the public getIncludes() and getExcludes() methods
             createIncludeExcludeGetters(cNode)
+            // create the public getIncludeNulls() method
+            createIncludeNullsGetter(cNode, INCLUDE_NULLS_GETTER, INCLUDE_NULLS_FIELD)
+
             // add implements IncludesExcludesInterface
             addInterface(cNode)
         }
@@ -92,6 +105,24 @@ class ConverterConfigASTTransformation extends AbstractASTTransformation {
                         EVAL_TYPE, "me",
                         args(
                                 new ConstantExpression(list.inspect() as String)
+                        )
+                )
+        ))
+    }
+
+    private static void createIncludeNullsField(ClassNode cNode, String fieldName, Boolean includeNulls) {
+        boolean hasExistingField = cNode.getDeclaredField(fieldName)
+        if (hasExistingField && cNode.getDeclaredField("_$fieldName")) return
+
+        cNode.addField(new FieldNode(
+                hasExistingField ? "_$fieldName" : fieldName,
+                (hasExistingField ? ACC_PRIVATE : ACC_PUBLIC) | ACC_FINAL | ACC_STATIC,
+                BOOLEAN_TYPE,
+                cNode,
+                callX(
+                        EVAL_TYPE, "me",
+                        args(
+                                new ConstantExpression(includeNulls.inspect() as String)
                         )
                 )
         ))
@@ -129,6 +160,27 @@ class ConverterConfigASTTransformation extends AbstractASTTransformation {
                 hasExistingMethod ? "_$methodName" : methodName,
                 hasExistingMethod ? ACC_PRIVATE : ACC_PUBLIC,
                 LIST_TYPE, // returnType
+                params(), // parameters
+                ClassNode.EMPTY_ARRAY, // exceptions
+                body
+        ))
+    }
+
+    public static void createIncludeNullsGetter(ClassNode cNode, String methodName, String fieldName) {
+        // make a public method if none exists otherwise try a private
+        // method with leading underscore
+        boolean hasExistingMethod = hasDeclaredMethod(cNode, methodName, 0)
+        if (hasExistingMethod && hasDeclaredMethod(cNode, "_$methodName", 0)) return
+
+        // method body
+        final BlockStatement body = new BlockStatement()
+        body.addStatement(createGetterStatements(cNode, fieldName))
+
+        // add method to class
+        cNode.addMethod(new MethodNode(
+                hasExistingMethod ? "_$methodName" : methodName,
+                hasExistingMethod ? ACC_PRIVATE : ACC_PUBLIC,
+                BOOLEAN_TYPE, // returnType
                 params(), // parameters
                 ClassNode.EMPTY_ARRAY, // exceptions
                 body
