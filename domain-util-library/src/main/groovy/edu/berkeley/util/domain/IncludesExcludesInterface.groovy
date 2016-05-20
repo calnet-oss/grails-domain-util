@@ -6,4 +6,7 @@ interface IncludesExcludesInterface {
 
     // fields to include
     List<String> getIncludes()
+    
+    // if true, include null values in converter output
+    Boolean getIncludeNulls()
 }
