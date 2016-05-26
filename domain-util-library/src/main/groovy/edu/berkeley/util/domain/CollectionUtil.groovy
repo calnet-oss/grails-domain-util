@@ -243,14 +243,16 @@ class CollectionUtil {
     }
 
     public static boolean logicallyEquivalent(Collection<LogicalEqualsAndHashCodeInterface> c1, Collection<LogicalEqualsAndHashCodeInterface> c2) {
-        Map<ObjectHolder<LogicalEqualsAndHashCodeInterface>, Boolean> c1Map = convertToMap(c1, c1.size() * 2)
-        Map<ObjectHolder<LogicalEqualsAndHashCodeInterface>, Boolean> c2Map = convertToMap(c2, c2.size() * 2)
-
         if (c1.size() != c2.size())
             return false;
 
-        return c1Map.hashCode() == c2Map.hashCode()
+        long c1HashCode = 0
+        c1.each { c1HashCode += it.logicalHashCode() }
 
+        long c2HashCode = 0
+        c2.each { c2HashCode += it.logicalHashCode() }
+
+        return c1HashCode == c2HashCode
     }
 
     // Convert a collection into a map using ObjectHolder proxies
