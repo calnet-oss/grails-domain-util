@@ -1,6 +1,7 @@
 package edu.berkeley.util.domain
 
 import grails.test.spock.IntegrationSpec
+import edu.berkeley.util.domain.test.*
 
 class DomainCollectionSyncSpec extends IntegrationSpec {
 
