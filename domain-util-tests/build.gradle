@@ -23,8 +23,14 @@ grails {
 }
 
 repositories {
-    jcenter()
-    grails.central()
+    mavenLocal()
+    maven {
+        url 'https://maven.calnet.berkeley.edu/artifactory/all/'
+        credentials {
+            username calnet_deploy_user
+            password calnet_deploy_password
+        }
+    }
 }
 
 dependencies {
@@ -45,6 +51,6 @@ dependencies {
 
     runtime "junit:junit:4.12"
     runtime "org.spockframework:spock-core:1.0-groovy-2.4"
-    
+
     compile project(":domain-util-library")
 }
