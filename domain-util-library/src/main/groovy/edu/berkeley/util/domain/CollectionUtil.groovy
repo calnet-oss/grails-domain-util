@@ -1,10 +1,7 @@
 package edu.berkeley.util.domain
 
+import edu.berkeley.calnet.groovy.transform.LogicalEqualsAndHashCodeInterface
 import groovy.util.logging.Slf4j
-
-import java.lang.reflect.InvocationHandler
-import java.lang.reflect.Method
-import java.lang.reflect.Proxy
 
 @Slf4j
 class CollectionUtil {
@@ -18,14 +15,16 @@ class CollectionUtil {
      *
      * @deprecated due to poor performance using Comparators.  Slated for removal.
      */
+    /*
     @Deprecated
-    protected static <T> boolean contains(Comparator<T> comparator, Collection<ObjectHolder<T>> collection, ObjectHolder<T> o) {
+    protected static <T> boolean contains(Comparator<T> comparator, Collection<T> collection, T o) {
         // if comparator.compare returns 0 for any element, then the object
         // is in the collection
-        return collection.any { !comparator.compare(it.object, o.object) }
+        return collection.any { !comparator.compare(it, o) }
     }
+    */
 
-    protected static <T> boolean contains(Map<ObjectHolder<T>, Boolean> collectionMap, ObjectHolder<T> o) {
+    protected static <T> boolean contains(Map<T, Boolean> collectionMap, T o) {
         return collectionMap.containsKey(o)
     }
 
@@ -42,8 +41,8 @@ class CollectionUtil {
     }
 
     private static <T> void _sync(def obj,
-                                  Map<ObjectHolder<T>, Boolean> targetMap,
-                                  Map<ObjectHolder<T>, Boolean> sourceMap,
+                                  Map<T, Boolean> targetMap,
+                                  Map<T, Boolean> sourceMap,
                                   FlushMode flushMode,
                                   Closure<Boolean> containsClosure,
                                   Closure<Boolean> addClosure,
@@ -56,14 +55,14 @@ class CollectionUtil {
         // Remove anything from target that's not in source.
         // Removals MUST come before additions.
         //log.debug("PROFILE: delete: START")
-        List<ObjectHolder<T>> deletedObjects = []
-        targetMap.keySet().each { ObjectHolder<T> it ->
+        List<T> deletedObjects = []
+        targetMap.keySet().each { T it ->
             if (!containsClosure(sourceMap, it)) {
-                removeClosure(it.object)
+                removeClosure(it)
                 deletedObjects.add(it)
             }
         }
-        deletedObjects.each { ObjectHolder<T> key ->
+        deletedObjects.each { T key ->
             targetMap.remove(key)
         }
         //log.debug("PROFILE: delete: END")
@@ -75,13 +74,13 @@ class CollectionUtil {
         //long totalContainsTime = 0
         //long totalAddTime = 0
         //long start = 0
-        sourceMap.keySet().each { ObjectHolder<T> it ->
+        sourceMap.keySet().each { T it ->
             //start = new Date().time
             boolean doesContain = containsClosure(targetMap, it)
             //totalContainsTime += new Date().time - start
             if (!doesContain) {
                 //start = new Date().time
-                addClosure(it.object)
+                addClosure(it)
                 targetMap.put(it, Boolean.TRUE)
                 //totalAddTime = new Date().time - start
             }
@@ -122,12 +121,12 @@ class CollectionUtil {
         // determine equality.  If you look at the Map interface JavaDoc,
         // the specification states that equality in a map is determined by:
         // (key==null ?  k==null : key.equals(k)).
-        Map<ObjectHolder<T>, Boolean> targetCollectionMap = convertToMap(target, (target.size() + source.size()) * 2)
-        Map<ObjectHolder<T>, Boolean> sourceCollectionMap = convertToMap(source, source.size() * 2)
+        Map<T, Boolean> targetCollectionMap = convertToMap(target, (target.size() + source.size()) * 2)
+        Map<T, Boolean> sourceCollectionMap = convertToMap(source, source.size() * 2)
         _sync(obj, targetCollectionMap, sourceCollectionMap, flushMode,
                 (containsClosure ?:
-                        // containsClosure(Map<ObjectHolder<T>, Boolean> source, ObjectHolder<T> targetElement)
-                        { Map<ObjectHolder<T>, Boolean> _sourceMap, ObjectHolder<T> targetElement ->
+                        // containsClosure(Map<T, Boolean> source, T targetElement)
+                        { Map<T, Boolean> _sourceMap, T targetElement ->
                             contains(_sourceMap, targetElement)
                         }
                 ),
@@ -154,6 +153,7 @@ class CollectionUtil {
      *
      * @deprecated due to poor performance using Comparators.  Slated for removal.
      */
+    /*
     @Deprecated
     public static <T> void sync(def domainObj,
                                 Comparator<T> comparator,
@@ -161,8 +161,8 @@ class CollectionUtil {
                                 Collection<T> source,
                                 FlushMode flushMode) {
         sync(domainObj, target, source, flushMode,
-                // containsClosure(Map<T, Boolean> source, ObjectHolder<T> targetElement)
-                { Map<ObjectHolder<T>, Boolean> _sourceMap, ObjectHolder<T> targetElement ->
+                // containsClosure(Map<T, Boolean> source, T targetElement)
+                { Map<T, Boolean> _sourceMap, T targetElement ->
                     contains(comparator, _sourceMap.keySet(), targetElement)
                 },
                 // addClosure(element)
@@ -174,6 +174,7 @@ class CollectionUtil {
                     removeElement(target, element)
                 })
     }
+    */
 
     /**
      * Synchronize target collection to match source collection.  After this
@@ -190,12 +191,12 @@ class CollectionUtil {
                             Closure<Boolean> removeClosure = null) {
         // We use temporary maps since we need an efficient way to determine
         // if something from one collection is already in the other.
-        Map<ObjectHolder<LogicalEqualsAndHashCodeInterface>, Boolean> targetCollectionMap = convertToLogicalHashMap(target, (target.size() + source.size()) * 2)
-        Map<ObjectHolder<LogicalEqualsAndHashCodeInterface>, Boolean> sourceCollectionMap = convertToLogicalHashMap(source, source.size() * 2)
+        Map<LogicalEqualsAndHashCodeInterface, Boolean> targetCollectionMap = convertToLogicalHashMap(target, (target.size() + source.size()) * 2)
+        Map<LogicalEqualsAndHashCodeInterface, Boolean> sourceCollectionMap = convertToLogicalHashMap(source, source.size() * 2)
 
         _sync(domainObj, targetCollectionMap, sourceCollectionMap, flushMode,
-                // containsClosure(Map<ObjecHolder<T>, Boolean> source, ObjectHolder<T> targetElement)
-                { Map<ObjectHolder<LogicalEqualsAndHashCodeInterface>, Boolean> _sourceMap, ObjectHolder<LogicalEqualsAndHashCodeInterface> targetElement ->
+                // containsClosure(Map<T, Boolean> source, T targetElement)
+                { Map<LogicalEqualsAndHashCodeInterface, Boolean> _sourceMap, LogicalEqualsAndHashCodeInterface targetElement ->
                     contains(_sourceMap, targetElement)
                 },
                 (addClosure ?:
@@ -212,12 +213,12 @@ class CollectionUtil {
                 ))
     }
 
-    private static <T> void postRemoveCheckpoint(def domainObj, List<ObjectHolder<T>> deletedObjects, FlushMode flushMode) {
+    private static <T> void postRemoveCheckpoint(def domainObj, List<T> deletedObjects, FlushMode flushMode) {
         if (flushMode == FlushMode.FLUSH) {
             boolean refreshRequired = false
-            deletedObjects.each { ObjectHolder<T> it ->
-                if (it.object == null || it.object?.isDirty()) {
-                    if (it.object != null) it.object.save()
+            deletedObjects.each { T it ->
+                if (it == null || it.isDirty()) {
+                    if (it != null) it.save()
                     refreshRequired = true
                 }
             }
@@ -247,108 +248,29 @@ class CollectionUtil {
             return false;
 
         long c1HashCode = 0
-        c1.each { c1HashCode += it.logicalHashCode() }
+        c1.each { c1HashCode += it.hashCode() }
 
         long c2HashCode = 0
-        c2.each { c2HashCode += it.logicalHashCode() }
+        c2.each { c2HashCode += it.hashCode() }
 
         return c1HashCode == c2HashCode
     }
 
-    // Convert a collection into a map using ObjectHolder proxies
-    private static <T> Map<ObjectHolder<T>, Boolean> convertToMap(Collection<T> collection, int initialSize) {
-        Map<ObjectHolder<T>, Boolean> map = new LinkedHashMap<ObjectHolder<T>, Boolean>(initialSize)
+    // Convert a collection into a map
+    private static <T> Map<T, Boolean> convertToMap(Collection<T> collection, int initialSize) {
+        Map<T, Boolean> map = new LinkedHashMap<T, Boolean>(initialSize)
         collection.each {
-            map.put(makeProxy(it), Boolean.TRUE)
+            map.put(it, Boolean.TRUE)
         }
         return map
     }
 
-    // Convert a collection into a map using ObjectHolder proxies
-    private static Map<ObjectHolder<LogicalEqualsAndHashCodeInterface>, Boolean> convertToLogicalHashMap(Collection<LogicalEqualsAndHashCodeInterface> collection, int initialSize) {
-        Map<ObjectHolder<LogicalEqualsAndHashCodeInterface>, Boolean> map = new LinkedHashMap<ObjectHolder<LogicalEqualsAndHashCodeInterface>, Boolean>(initialSize)
+    // Convert a collection into a map
+    private static Map<LogicalEqualsAndHashCodeInterface, Boolean> convertToLogicalHashMap(Collection<LogicalEqualsAndHashCodeInterface> collection, int initialSize) {
+        Map<LogicalEqualsAndHashCodeInterface, Boolean> map = new LinkedHashMap<LogicalEqualsAndHashCodeInterface, Boolean>(initialSize)
         collection.each {
-            map.put(makeLogicalHashProxy(it), Boolean.TRUE)
+            map.put(it, Boolean.TRUE)
         }
         return map
-    }
-
-    private static <T> ObjectHolder<T> makeProxy(T obj) {
-        return (ObjectHolder<T>) Proxy.newProxyInstance(
-                ObjectHolder.getClassLoader(),
-                [ObjectHolder] as Class<?>[],
-                new ObjectHolderProxyHandler<T>(new DefaultObjectHolder<T>(obj))
-        );
-    }
-
-    // We use a proxy so we can override the object's hashCode() and
-    // equals() to use logicalHashCode() and logicalEquals() instead.  This
-    // is to make the Map work, which is totally reliant on equals() and
-    // hashCode() for checking key equality.
-    private static <T extends LogicalEqualsAndHashCodeInterface> ObjectHolder<T> makeLogicalHashProxy(T obj) {
-        return (ObjectHolder<T>) Proxy.newProxyInstance(
-                ObjectHolder.getClassLoader(),
-                [ObjectHolder] as Class<?>[],
-                new ObjectHolderProxyHandler<T>(new LogicalHashCodeObjectHolder(obj))
-        );
-    }
-
-    // The InvocationHandler for the proxy
-    static class ObjectHolderProxyHandler<T> implements InvocationHandler {
-        private ObjectHolder<T> objectHolder
-
-        public ObjectHolderProxyHandler(ObjectHolder<T> objectHolder) {
-            this.objectHolder = objectHolder
-        }
-
-        @Override
-        Object invoke(Object o, Method method, Object[] args) throws Throwable {
-            return method.invoke(objectHolder, args)
-        }
-    }
-
-    static interface ObjectHolder<E> {
-        E getObject()
-    }
-
-    // default object holder which handles
-    // non-LogicalEqualsAndHashCodeInterface objects
-    static class DefaultObjectHolder<E> implements ObjectHolder<E> {
-        final E object
-
-        DefaultObjectHolder(E object) {
-            this.object = object
-        }
-
-        @Override
-        int hashCode() {
-            return object?.hashCode() ?: 0
-        }
-
-        @Override
-        boolean equals(Object o) {
-            return (o == null ? object == null : object.equals((o instanceof ObjectHolder ? ((ObjectHolder) o).object : o)))
-        }
-    }
-
-    // the object holder which uses logicalHashCode() and logicalEquals()
-    // for LogicalEqualsAndHashCodeInterface objects when putting them into
-    // a map.
-    static class LogicalHashCodeObjectHolder<E extends LogicalEqualsAndHashCodeInterface> implements ObjectHolder<LogicalEqualsAndHashCodeInterface> {
-        final E object
-
-        LogicalHashCodeObjectHolder(E object) {
-            this.object = object
-        }
-
-        @Override
-        int hashCode() {
-            return object?.logicalHashCode() ?: 0
-        }
-
-        @Override
-        boolean equals(Object o) {
-            return (o == null ? object == null : object.logicalEquals((o instanceof ObjectHolder ? ((ObjectHolder) o).object : o)))
-        }
     }
 }

@@ -71,25 +71,6 @@ class DomainCollectionSyncSpec extends IntegrationSpec {
 
     /**
      * Test that the "target" collection becomes the "source" collection
-     * using CollectionUtil.sync().  This utilizes "logical comparison"
-     * of domain objects using the DomainLogicialComparator.
-     */
-    void "test syncing collection using comparator"() {
-        given:
-        Person person = Person.get("1")
-        when:
-        assert person.names*.id.sort() == [1, 2, 11, 22]
-        // person.names should contain the new collection
-        CollectionUtil.sync(person, new DomainLogicalComparator<PersonName>(excludes: ["person"]), person.names, getNameCollectionNew(person), CollectionUtil.FlushMode.NO_FLUSH)
-        person.save(opts)
-        then:
-        // We should have 1,2,3 now, but it can be ordered any way in
-        // the set so sort the results
-        testCollection(person, { _person -> _person.names*.id.sort() }, [1, 2, 3])
-    }
-
-    /**
-     * Test that the "target" collection becomes the "source" collection
      * using CollectionUtil.sync().  This utilizes logicalEquals().
      */
     void "test syncing collection using logicalEquals()"() {
