@@ -71,9 +71,10 @@ class DomainCollectionSyncSpec extends IntegrationSpec {
 
     /**
      * Test that the "target" collection becomes the "source" collection
-     * using CollectionUtil.sync().  This utilizes logicalEquals().
+     * using CollectionUtil.sync().  This utilizes equals() from
+     * LogicalHashCodeAndEquals.
      */
-    void "test syncing collection using logicalEquals()"() {
+    void "test syncing collection using equals() from LogicalHashCodeAndEquals"() {
         given:
         Person person = Person.get("1")
         when:
@@ -89,10 +90,10 @@ class DomainCollectionSyncSpec extends IntegrationSpec {
 
     /**
      * Test that the "target" collection becomes the "source" collection
-     * using CollectionUtil.sync().  This utilizes logicalEquals() and
-     * an add and remove closure.
+     * using CollectionUtil.sync().  This utilizes equals() from
+     * LogicalHashCodeAndEquals and an add and remove closure.
      */
-    void "test syncing collection using logicalEquals() and add and remove closures"() {
+    void "test syncing collection using equals() from LogicalHashCodeAndEquals and add and remove closures"() {
         given:
         Person person = Person.get("1")
         when:
