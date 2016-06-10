@@ -23,7 +23,7 @@ used with `@LogicalEqualsAndHashCode`.
 
 Example:
 ```
-import import edu.berkeley.calnet.groovy.transform.LogicalEqualsAndHashCode
+import edu.berkeley.calnet.groovy.transform.LogicalEqualsAndHashCode
 
 @LogicalEqualsAndHashCode
 class Person {
