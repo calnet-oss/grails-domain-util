@@ -4,7 +4,7 @@ Grails Domain Utility Library
 This library offers utility classes for handling domain class instances.
 
 Primarily:
-  * `DomainLogicalComparator` and `CollectionUtil`
+  * `CollectionUtil`
     * Ability to compare collections and add new elements and remove old
       elements based on the comparison of a source collection and a target
       collection.  Useful for adding and removing elements from things like
@@ -13,25 +13,23 @@ Primarily:
     marshalled using `edu.berkeley.render.json.converters.ExtendedJSON` from
     the `grails-render-json` plugin.
 
-## @LogicalEqualsAndHashCode and CollectionUtil.sync()
+## CollectionUtil.sync()
 
-The easiest way to use `DomainLogicalComparator` is with the
-`@LogicalEqualsAndHashCode` annotation.
+CollectionUtil.sync() is typically used with `@LogicalEqualsAndHashCode`
+from the
+[groovy-hashcode-ast](https://github.com/calnet-oss/groovy-hashcode-ast)
+library, but it can be used with any Collection.  The examples here show it
+used with `@LogicalEqualsAndHashCode`.
 
 Example:
 ```
-import edu.berkeley.util.domain.transform.LogicalEqualsAndHashCode
+import edu.berkeley.calnet.groovy.transform.LogicalEqualsAndHashCode
 
 @LogicalEqualsAndHashCode
 class Person {
     static hasMany = [ names : PersonName ]
     ...
 }
-```
-
-Then to logically compare two instances of `Person`:
-```
-  boolean isLogicallyEqual = person1.logicalEquals(person2)
 ```
 
 To use the `sync` method from `CollectionUtil`:

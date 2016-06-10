@@ -1,7 +1,7 @@
 package edu.berkeley.util.domain.test
 
 import edu.berkeley.util.domain.transform.ConverterConfig
-import edu.berkeley.util.domain.transform.LogicalEqualsAndHashCode
+import edu.berkeley.calnet.groovy.transform.LogicalEqualsAndHashCode
 
 @LogicalEqualsAndHashCode(excludes = ["dummyField", "uid"])
 @ConverterConfig(excludes = ["dummyField"])
