@@ -5,3 +5,4 @@ buildPlugins
 *.ipr
 *.iws
 .gradle
+out
