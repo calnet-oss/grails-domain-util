@@ -21,7 +21,7 @@ def grailsVersion = "2.5.4"
 dependencies {
     compile "org.codehaus.groovy:groovy-all:2.4.4"
     compile "org.grails:grails-core:$grailsVersion"
-    compile "edu.berkeley.calnet.groovy.libs:hashcode-ast:0.0.1-SNAPSHOT"
+    compile "edu.berkeley.calnet.groovy.libs:hashcode-ast:0.0.2-SNAPSHOT"
     testCompile "org.spockframework:spock-core:1.0-groovy-2.4"
     testCompile "org.grails:grails-dependencies:$grailsVersion"
     testCompile "javax.servlet:javax.servlet-api:3.1.0"
