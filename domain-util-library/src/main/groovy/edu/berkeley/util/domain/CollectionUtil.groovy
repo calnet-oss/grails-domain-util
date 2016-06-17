@@ -1,6 +1,5 @@
 package edu.berkeley.util.domain
 
-import edu.berkeley.calnet.groovy.transform.LogicalEqualsAndHashCodeInterface
 import groovy.util.logging.Slf4j
 
 @Slf4j
@@ -9,23 +8,8 @@ class CollectionUtil {
         NO_FLUSH, FLUSH
     }
 
-    /**
-     * Implements Collection.contains() but using a Comparator to do the
-     * equality check.
-     *
-     * @deprecated due to poor performance using Comparators.  Slated for removal.
-     */
-    /*
-    @Deprecated
-    protected static <T> boolean contains(Comparator<T> comparator, Collection<T> collection, T o) {
-        // if comparator.compare returns 0 for any element, then the object
-        // is in the collection
-        return collection.any { !comparator.compare(it, o) }
-    }
-    */
-
-    protected static <T> boolean contains(Map<T, Boolean> collectionMap, T o) {
-        return collectionMap.containsKey(o)
+    protected static <T> boolean contains(Collection<T> collection, T o) {
+        return collection.contains(o)
     }
 
     protected static <T> boolean removeElement(Collection<T> target, T element) {
@@ -41,63 +25,126 @@ class CollectionUtil {
     }
 
     private static <T> void _sync(def obj,
-                                  Map<T, Boolean> targetMap,
-                                  Map<T, Boolean> sourceMap,
+                                  Collection<T> target,
+                                  Collection<T> source,
                                   FlushMode flushMode,
-                                  Closure<Boolean> containsClosure,
                                   Closure<Boolean> addClosure,
                                   Closure<Boolean> removeClosure) {
-        if (targetMap == null)
+        if (target == null)
             throw new IllegalArgumentException("target cannot be null")
-        if (sourceMap == null)
+        if (source == null)
             throw new IllegalArgumentException("source cannot be null")
 
+        /**
+         * There is one thing we could do here at a later date to maybe
+         * increase efficiency.  That is, if there are rows getting deleted,
+         * to re-use those identifiers for the rows getting added.
+         */
+
+        //log.warn("SOURCE: " + source)
+        //log.warn("TARGET: " + target)
+
+        // Make a map of source identifiers
+        Map<Object, T> sourceIdentifiersMap = new HashMap<Object, T>((int) (source.size() * 1.25))
+        source.each { if (it.ident() != null) sourceIdentifiersMap.put(it.ident(), it) }
+        //log.warn("SOURCE IDS: " + sourceIdentifiersMap)
+
         // Remove anything from target that's not in source.
-        // Removals MUST come before additions.
-        //log.debug("PROFILE: delete: START")
-        List<T> deletedObjects = []
-        targetMap.keySet().each { T it ->
-            if (!containsClosure(sourceMap, it)) {
-                removeClosure(it)
-                deletedObjects.add(it)
+        Collection<T> deletedObjects = target.findAll { T it ->
+            // If identifiers match but the hash code is different, we don't want to count
+            // that as a deleted object.  Instead, it will get replaced.
+            if (!contains(source, it)) {
+                boolean isNewOrIsNotInSource = (it.ident() == null || !sourceIdentifiersMap.containsKey(it.ident()))
+                //log.warn("SOURCE DOES NOT CONTAIN $it, isNewOrIsNotInSource=$isNewOrIsNotInSource")
+                return isNewOrIsNotInSource
+            } else {
+                //log.warn("SOURCE CONTAINS $it")
+                return false
             }
         }
-        deletedObjects.each { T key ->
-            targetMap.remove(key)
+
+        //log.warn("REMOVING $deletedObjects")
+
+        deletedObjects.each {
+            removeClosure(it)
+            assert !target.contains(it)
         }
-        //log.debug("PROFILE: delete: END")
-        //log.debug("PROFILE: postRemove checkpoint: START")
-        postRemoveCheckpoint(obj, deletedObjects, flushMode)
-        //log.debug("PROFILE: postRemove checkpoint: END")
-        // Add anything in source that target doesn't already have.
-        //log.debug("PROFILE: add: START")
-        //long totalContainsTime = 0
-        //long totalAddTime = 0
-        //long start = 0
-        sourceMap.keySet().each { T it ->
-            //start = new Date().time
-            boolean doesContain = containsClosure(targetMap, it)
-            //totalContainsTime += new Date().time - start
-            if (!doesContain) {
-                //start = new Date().time
-                addClosure(it)
-                targetMap.put(it, Boolean.TRUE)
-                //totalAddTime = new Date().time - start
+
+        // .delete() must come before .save() in case we are replacing an 
+        // object with another that may trigger unique constraint
+        // violations if the .delete() and .save() order isn't maintained.
+        if (flushMode == FlushMode.FLUSH) {
+            deletedObjects.each { delObj ->
+                if (!contains(target, delObj)) {
+                    T locked = delObj.lock(delObj.ident())
+                    if (locked != null) {
+                        locked.delete(flush: true)
+                    } else {
+                        //log.warn("${delObj} has disappeared already.  Can't hard-delete it.")
+                    }
+                }
             }
         }
-        //log.debug("totalContainsTime = ${totalContainsTime}ms, totalAddTime = ${totalAddTime}ms")
-        //log.debug("PROFILE: add: END")
-        //log.debug("PROFILE: postAdd checkpoint: START")
-        postAddCheckpoint(obj, flushMode)
-        //log.debug("PROFILE: postAdd checkpoint: END")
+
+        // Make a map of target identifiers
+        Map<Object, T> targetIdentifiersMap = new HashMap<Object, T>((int) (target.size() * 1.25))
+        target.each { if (it.ident() != null) targetIdentifiersMap.put(it.ident(), it) }
+        //log.warn("TARGET IDS: " + targetIdentifiersMap)
+
+        // Add anything from the source that's not in target.
+        source.each { T objToAdd ->
+            if (!contains(target, objToAdd)) {
+                T targetObject = targetIdentifiersMap.get(objToAdd.ident())
+                if (targetObject != null) {
+                    // Replace objects with same id but different hash codes
+                    //log.warn("REPLACING $objToAdd")
+                    // removeClosure won't work here because that removes based on hashCode.
+                    // Instead, we want to remove by identifier.
+                    Collection<T> objsToRemove = target.findAll { it.ident() == targetObject.ident() }
+                    assert objsToRemove
+                    objsToRemove.each { objToRemove ->
+                        // I don't know why, but with our
+                        // DomainCollectionSyncSpec,
+                        // target.remove(objToRemove) is returning false. 
+                        // I've confirmed target DOES contain objToRemove,
+                        // both from a hashCode() and
+                        // System.identityHashCode() perspective, as well as
+                        // equals() perspective, so I don't know what the
+                        // remove() issue is.  So that the reason for
+                        // failSafeRemove here, which is less efficient, but
+                        // guarantees to get the job done.
+                        assert failSafeRemove(target, objToRemove)
+                    }
+                    //log.warn("AFTER REMOVAL, TARGET=" + target)
+                    addClosure(objToAdd)
+                    //log.warn("AFTER ADD-BACK, TARGET=" + target)
+                } else {
+                    //log.warn("ADDING $objToAdd")
+                    if (flushMode == FlushMode.FLUSH) {
+                        objToAdd.save(flush: true, failOnError: true)
+                        //log.warn("    which now has id " + objToAdd.ident())
+                    }
+                    addClosure(objToAdd)
+                }
+            } else {
+                //log.warn("SOURCE CONTAINS $objToAdd, LEAVING ALONE")
+            }
+        }
+
+        //if (flushMode == FlushMode.FLUSH) {
+        //    obj.save(flush: true, failOnError: true)
+        //}
+
+        //log.warn("FINAL TARGET: $target")
     }
 
     /**
      * Synchronize target collection to match source collection.  After this
      * call, target will only contain what's in source.
      *
-     * Note this will delete any domain object removed from the target
-     * collection.  It will also flush the Hibernate session.
+     * If flushMode==FlushMode.FLUSH, this will delete any domain object
+     * removed from the target collection.  It will also flush the domain
+     * object with a save() call.
      *
      * <p/>
      *
@@ -111,25 +158,9 @@ class CollectionUtil {
                                 Collection<T> target,
                                 Collection<T> source,
                                 FlushMode flushMode,
-                                Closure<Boolean> containsClosure,
-                                Closure<Boolean> addClosure,
-                                Closure<Boolean> removeClosure) {
-        // We use temporary maps since we need an efficient way to determine
-        // if something from one collection is already in the other.  Since
-        // we're dealing with generic objects of unknown type, the objects
-        // must implement the same semantics used in a regular Map to
-        // determine equality.  If you look at the Map interface JavaDoc,
-        // the specification states that equality in a map is determined by:
-        // (key==null ?  k==null : key.equals(k)).
-        Map<T, Boolean> targetCollectionMap = convertToMap(target, (target.size() + source.size()) * 2)
-        Map<T, Boolean> sourceCollectionMap = convertToMap(source, source.size() * 2)
-        _sync(obj, targetCollectionMap, sourceCollectionMap, flushMode,
-                (containsClosure ?:
-                        // containsClosure(Map<T, Boolean> source, T targetElement)
-                        { Map<T, Boolean> _sourceMap, T targetElement ->
-                            contains(_sourceMap, targetElement)
-                        }
-                ),
+                                Closure<Boolean> addClosure = null,
+                                Closure<Boolean> removeClosure = null) {
+        _sync(obj, target, source, flushMode,
                 (addClosure ?:
                         // addClosure(element)
                         { T element ->
@@ -144,133 +175,31 @@ class CollectionUtil {
                 ))
     }
 
-    /**
-     * Synchronize target collection to match source collection.  After this
-     * call, target will only contain what's in source.
-     *
-     * Note this will delete any domain object removed from the target
-     * collection.  It will also flush the Hibernate session.
-     *
-     * @deprecated due to poor performance using Comparators.  Slated for removal.
-     */
-    /*
-    @Deprecated
-    public static <T> void sync(def domainObj,
-                                Comparator<T> comparator,
-                                Collection<T> target,
-                                Collection<T> source,
-                                FlushMode flushMode) {
-        sync(domainObj, target, source, flushMode,
-                // containsClosure(Map<T, Boolean> source, T targetElement)
-                { Map<T, Boolean> _sourceMap, T targetElement ->
-                    contains(comparator, _sourceMap.keySet(), targetElement)
-                },
-                // addClosure(element)
-                { T element ->
-                    addElement(target, element)
-                },
-                // removeClosure(element)
-                { T element ->
-                    removeElement(target, element)
-                })
-    }
-    */
-
-    /**
-     * Synchronize target collection to match source collection.  After this
-     * call, target will only contain what's in source.
-     *
-     * Note this will delete any domain object removed from the target
-     * collection.  It will also flush the Hibernate session.
-     */
-    public static void sync(def domainObj,
-                            Collection<LogicalEqualsAndHashCodeInterface> target,
-                            Collection<LogicalEqualsAndHashCodeInterface> source,
-                            FlushMode flushMode,
-                            Closure<Boolean> addClosure = null,
-                            Closure<Boolean> removeClosure = null) {
-        // We use temporary maps since we need an efficient way to determine
-        // if something from one collection is already in the other.
-        Map<LogicalEqualsAndHashCodeInterface, Boolean> targetCollectionMap = convertToLogicalHashMap(target, (target.size() + source.size()) * 2)
-        Map<LogicalEqualsAndHashCodeInterface, Boolean> sourceCollectionMap = convertToLogicalHashMap(source, source.size() * 2)
-
-        _sync(domainObj, targetCollectionMap, sourceCollectionMap, flushMode,
-                // containsClosure(Map<T, Boolean> source, T targetElement)
-                { Map<LogicalEqualsAndHashCodeInterface, Boolean> _sourceMap, LogicalEqualsAndHashCodeInterface targetElement ->
-                    contains(_sourceMap, targetElement)
-                },
-                (addClosure ?:
-                        // addClosure(element)
-                        { element ->
-                            addElement(target, element)
-                        }
-                ),
-                (removeClosure ?:
-                        // removeClosure(element)
-                        { element ->
-                            removeElement(target, element)
-                        }
-                ))
-    }
-
-    private static <T> void postRemoveCheckpoint(def domainObj, List<T> deletedObjects, FlushMode flushMode) {
-        if (flushMode == FlushMode.FLUSH) {
-            boolean refreshRequired = false
-            deletedObjects.each { T it ->
-                if (it == null || it.isDirty()) {
-                    if (it != null) it.save()
-                    refreshRequired = true
-                }
-            }
-            domainObj.save(flush: true)
-            if (refreshRequired) {
-                // May get the following error: this instance does not yet
-                // exist as a row in the database.  I'm not sure if there's
-                // a better way to check for this.
-                try {
-                    domainObj.refresh()
-                }
-                catch (Exception e) {
-                    log.debug("refresh() exception, probably because $domainObj doesn't exist in database yet, which is ok: ${e.message}")
-                }
-            }
-        }
-    }
-
-    private static void postAddCheckpoint(def domainObj, FlushMode flushMode) {
-        if (flushMode == FlushMode.FLUSH) {
-            domainObj.save(flush: true)
-        }
-    }
-
-    public static boolean logicallyEquivalent(Collection<LogicalEqualsAndHashCodeInterface> c1, Collection<LogicalEqualsAndHashCodeInterface> c2) {
-        if (c1.size() != c2.size())
+    public static <T> boolean logicallyEquivalent(Collection<T> c1, Collection<T> c2) {
+        if (c1?.size() != c2?.size())
             return false;
 
         long c1HashCode = 0
-        c1.each { c1HashCode += it.hashCode() }
+        c1?.each { c1HashCode += it.hashCode() }
 
         long c2HashCode = 0
-        c2.each { c2HashCode += it.hashCode() }
+        c2?.each { c2HashCode += it.hashCode() }
 
         return c1HashCode == c2HashCode
     }
 
-    // Convert a collection into a map
-    private static <T> Map<T, Boolean> convertToMap(Collection<T> collection, int initialSize) {
-        Map<T, Boolean> map = new LinkedHashMap<T, Boolean>(initialSize)
-        collection.each {
-            map.put(it, Boolean.TRUE)
+    private static <T> boolean failSafeRemove(Collection<T> c, T val) {
+        boolean removed = false
+        ArrayList<T> tmp = new ArrayList<T>(c.size())
+        for (T element : c) {
+            if ((element == null ? val != null : !element.equals(val))) {
+                tmp.add(element)
+            } else {
+                removed = true
+            }
         }
-        return map
-    }
-
-    // Convert a collection into a map
-    private static Map<LogicalEqualsAndHashCodeInterface, Boolean> convertToLogicalHashMap(Collection<LogicalEqualsAndHashCodeInterface> collection, int initialSize) {
-        Map<LogicalEqualsAndHashCodeInterface, Boolean> map = new LinkedHashMap<LogicalEqualsAndHashCodeInterface, Boolean>(initialSize)
-        collection.each {
-            map.put(it, Boolean.TRUE)
-        }
-        return map
+        c.clear()
+        c.addAll(tmp)
+        return removed
     }
 }
