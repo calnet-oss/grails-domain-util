@@ -80,7 +80,7 @@ class CollectionUtil {
                     if (locked != null) {
                         locked.delete(flush: true)
                     } else {
-                        log.warn("${delObj} has disappeared already.  Can't hard-delete it.")
+                        //log.warn("${delObj} has disappeared already.  Can't hard-delete it.")
                     }
                 }
             }
