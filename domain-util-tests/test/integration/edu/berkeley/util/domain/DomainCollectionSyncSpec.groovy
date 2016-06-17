@@ -1,7 +1,10 @@
 package edu.berkeley.util.domain
 
+import edu.berkeley.util.domain.test.NameType
+import edu.berkeley.util.domain.test.Person
+import edu.berkeley.util.domain.test.PersonName
+import edu.berkeley.util.domain.test.UniqueElement
 import grails.test.spock.IntegrationSpec
-import edu.berkeley.util.domain.test.*
 
 class DomainCollectionSyncSpec extends IntegrationSpec {
 
@@ -50,18 +53,27 @@ class DomainCollectionSyncSpec extends IntegrationSpec {
     // same as the old collection, except we removed 11 and 22 and added 3
     private HashSet<PersonName> getNameCollectionNew(Person person) {
         HashSet<PersonName> set = new HashSet<PersonName>();
+
+        // this will test keeping something
         set.add(PersonName.get(1))
-        set.add(PersonName.get(2))
+
+        // this will test replacing something
+        PersonName name2 = PersonName.get(2)
+        name2.fullName = "John Mark Changed"
+        set.add(name2)
+
+        // this will test adding something
         PersonName newName = new PersonName(person: person, nameType: NameType.get(3), fullName: "John Markus Smith")
         newName.id = 3
         newName.save(opts)
         set.add(newName)
+
         return set
     }
 
     boolean testCollection(Person person, Closure<Collection> realValuesClosure, Collection expectedValues) {
         Person.withNewSession {
-            person = person.refresh()
+            person.refresh()
             // We should have 1,2,3 now, but it can be ordered any way in
             // the set so sort the results
             assert realValuesClosure(person) == expectedValues
@@ -71,34 +83,34 @@ class DomainCollectionSyncSpec extends IntegrationSpec {
 
     /**
      * Test that the "target" collection becomes the "source" collection
-     * using CollectionUtil.sync().  This utilizes equals() from
-     * LogicalHashCodeAndEquals.
+     * using CollectionUtil.sync().  This utilizes hashCode() and equals()
+     * from LogicalHashCodeAndEquals.
      */
-    void "test syncing collection using equals() from LogicalHashCodeAndEquals"() {
+    void "test syncing collection using hashCode() and equals() from LogicalHashCodeAndEquals"() {
         given:
         Person person = Person.get("1")
         when:
-        assert person.names*.id.sort() == [1, 2, 11, 22]
         // person.names should contain the new collection
+        assert person.names*.id.sort() == [1, 2, 11, 22]
         CollectionUtil.sync(person, person.names, getNameCollectionNew(person), CollectionUtil.FlushMode.NO_FLUSH)
         person.save(opts)
         then:
         // We should have 1,2,3 now, but it can be ordered any way in
         // the set so sort the results
-        testCollection(person, { _person -> _person.names*.id.sort() }, [1, 2, 3])
+        testCollection(person, { it.names.collect { name -> "${name.id}:${name.fullName}" }.sort() }, ["1:John M Smith", "2:John Mark Changed", "3:John Markus Smith"])
     }
 
     /**
      * Test that the "target" collection becomes the "source" collection
-     * using CollectionUtil.sync().  This utilizes equals() from
-     * LogicalHashCodeAndEquals and an add and remove closure.
+     * using CollectionUtil.sync().  This utilizes hashCode() and equals()
+     * from LogicalHashCodeAndEquals and an add and remove closure.
      */
-    void "test syncing collection using equals() from LogicalHashCodeAndEquals and add and remove closures"() {
+    void "test syncing collection using hashCode() and equals() from LogicalHashCodeAndEquals and add and remove closures"() {
         given:
         Person person = Person.get("1")
         when:
-        assert person.names*.id.sort() == [1, 2, 11, 22]
         // person.names should contain the new collection
+        assert person.names*.id.sort() == [1, 2, 11, 22]
         CollectionUtil.sync(person, person.names, getNameCollectionNew(person), CollectionUtil.FlushMode.NO_FLUSH, {
             // add closure
             person.addToNames(it)
@@ -110,7 +122,7 @@ class DomainCollectionSyncSpec extends IntegrationSpec {
         then:
         // We should have 1,2,3 now, but it can be ordered any way in
         // the set so sort the results
-        testCollection(person, { _person -> _person.names*.id.sort() }, [1, 2, 3])
+        testCollection(person, { it.names.collect { name -> "${name.id}:${name.fullName}" }.sort() }, ["1:John M Smith", "2:John Mark Changed", "3:John Markus Smith"])
     }
 
     void "test changing a collection that has a unique constraint"() {
@@ -118,19 +130,24 @@ class DomainCollectionSyncSpec extends IntegrationSpec {
         Person person = Person.get("1")
         UniqueElement ue = new UniqueElement(name: "test1", person: person)
         person.addToUniqueElements(ue)
-        person.save(failOnError: true, flush: true)
-        person = person.refresh()
+        person.save(opts)
+        person.refresh()
 
         when:
-        assert ue.id && person.uniqueElements?.size() == 1
         // create a new collection with a different unique element
+        assert person.uniqueElements?.size() == 1 && person.uniqueElements[0].id
         HashSet<UniqueElement> newCollection = new HashSet<UniqueElement>()
         newCollection.add(new UniqueElement(name: "test2", person: person))
-        CollectionUtil.sync(person, person.uniqueElements, newCollection, CollectionUtil.FlushMode.FLUSH)
-        person.save(failOnError: true, flush: true)
+        CollectionUtil.sync(person, person.uniqueElements, newCollection, CollectionUtil.FlushMode.FLUSH, {
+            person.addToUniqueElements(it)
+        }, {
+            person.removeFromUniqueElements(it)
+        })
+        person.save(opts)
+
         Closure<Boolean> testResult = {
             Person.withNewSession {
-                person = person.refresh()
+                person.refresh()
                 assert person.uniqueElements.size() == 1
                 assert person.uniqueElements[0].name == "test2"
             }
