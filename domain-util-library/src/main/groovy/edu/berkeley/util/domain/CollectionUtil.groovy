@@ -70,9 +70,9 @@ class CollectionUtil {
             assert !target.contains(it)
         }
 
-        // .delete() must come before .save() in case we are replacing an 
+        // delete() must come before save() in case we are replacing an
         // object with another that may trigger unique constraint
-        // violations if the .delete() and .save() order isn't maintained.
+        // violations if the .delete() and save() order isn't maintained.
         if (flushMode == FlushMode.FLUSH) {
             deletedObjects.each { delObj ->
                 if (!contains(target, delObj)) {
@@ -120,10 +120,8 @@ class CollectionUtil {
                     //log.warn("AFTER ADD-BACK, TARGET=" + target)
                 } else {
                     //log.warn("ADDING $objToAdd")
-                    if (flushMode == FlushMode.FLUSH) {
-                        objToAdd.save(flush: true, failOnError: true)
-                        //log.warn("    which now has id " + objToAdd.ident())
-                    }
+                    // There's no need to save() here.  A later obj.save()
+                    // will accomplish that.
                     addClosure(objToAdd)
                 }
             } else {
