@@ -68,22 +68,9 @@ jar {
     version = project.version
 }
 
-distributions {
-    main {
-        baseName = rootProject.name
-        contents {
-            from fileTree(dir: '.', includes: [
-                    'build/libs/**',
-                    'src/**',
-                    'gradle/**',
-                    'gradelw', 'gradlew.bat',
-                    'build.gradle', 'settings.gradle', 'gradle.properties'
-            ])
-        }
-    }
+task sourceJar(type: Jar) {
+    from sourceSets.main.allGroovy
 }
-distZip.dependsOn jar
-distTar.dependsOn jar
 
 // publishing with './gradlew publish'
 publish.dependsOn assemble
@@ -91,8 +78,9 @@ publishToMavenLocal.dependsOn assemble
 publishing {
     publications {
         maven(MavenPublication) {
-            artifactId "domain-util"
-            artifact("build/distributions/${rootProject.name}-${project.version}.zip")
+            artifactId rootProject.name
+            from components.java
+            artifact sourceJar { classifier "sources" }
         }
     }
 
@@ -101,7 +89,8 @@ publishing {
             // Put the property settings in ~/.gradle/gradle.properties for
             // default_deploy_url, default_deploy_grails_plugin_repo
             // default_deploy_username and default_deploy_password.
-            url "${project.property('default_deploy_url')}/${default_deploy_grails_plugin_repo}"
+            //url "${project.property('default_deploy_url')}/${default_deploy_lib_repo}"
+            url "${project.property('default_deploy_url')}/calnet-libs"
             credentials {
                 username project.property("default_deploy_user")
                 password project.property("default_deploy_password")
