@@ -1,33 +1,66 @@
-apply plugin: 'groovy'
-apply plugin: 'maven'
-apply plugin: 'distribution'
-
-project.group = 'edu.berkeley.calnet.libs'
-
-targetCompatibility = 1.7
-
-repositories {
-    mavenLocal()
-    maven {
-        url 'https://maven.calnet.berkeley.edu/artifactory/all/'
-        credentials {
-            username calnet_deploy_user
-            password calnet_deploy_password
+buildscript {
+    repositories {
+        mavenLocal()
+        // If using a Maven proxy, put the property settings in
+        // ~/.gradle/gradle.properties for default_proxy_url,
+        // default_proxy_username and default_proxy_password.
+        if (project.hasProperty("default_proxy_url")) {
+            maven {
+                url project.property("default_proxy_url")
+                credentials {
+                    username project.property("default_proxy_username")
+                    password project.property("default_proxy_password")
+                }
+            }
         }
+        jcenter()
+        mavenCentral()
+    }
+    dependencies {
+        classpath "io.spring.gradle:dependency-management-plugin:${spring_depmgmt_version}"
+        classpath "org.grails:grails-gradle-plugin:${grails_gradle_version}"
     }
 }
 
-def grailsVersion = "2.5.4"
+apply plugin: 'groovy'
+apply plugin: 'project-report'
+apply plugin: "io.spring.dependency-management"
+apply plugin: 'maven-publish'
+apply plugin: 'distribution'
+
+group = 'edu.berkeley.calnet.libs'
+
+targetCompatibility = 1.7
+sourceCompatibility = 1.7
+
+repositories {
+    mavenLocal()
+    // If using a Maven proxy, put the property settings in
+    // ~/.gradle/gradle.properties for default_proxy_url,
+    // default_proxy_username and default_proxy_password.
+    if (project.hasProperty("default_proxy_url")) {
+        maven {
+            url project.property("default_proxy_url")
+            credentials {
+                username project.property("default_proxy_username")
+                password project.property("default_proxy_password")
+            }
+        }
+    }
+    jcenter()
+    mavenCentral()
+}
+
+dependencyManagement {
+    imports {
+        mavenBom "edu.berkeley.calnet:gradle-grails-bom:2.5.4"
+    }
+}
+
 dependencies {
-    compile "org.codehaus.groovy:groovy-all:2.4.4"
-    compile "org.grails:grails-core:$grailsVersion"
+    compile "org.grails:grails-bootstrap"
+    compile "org.grails:grails-core"
     compile "edu.berkeley.calnet.groovy.libs:hashcode-ast:0.0.4-SNAPSHOT"
-    testCompile "org.spockframework:spock-core:1.0-groovy-2.4"
-    testCompile "org.grails:grails-dependencies:$grailsVersion"
-    testCompile "javax.servlet:javax.servlet-api:3.1.0"
-    testCompile "org.grails:grails-plugin-testing:$grailsVersion"
-    testCompile "org.grails:grails-datastore-test-support:1.0.2-grails-2.4"
-    testCompile "org.grails.plugins:hibernate4:4.3.10"
 }
 
 jar {
@@ -52,14 +85,26 @@ distributions {
 distZip.dependsOn jar
 distTar.dependsOn jar
 
-uploadArchives {
+// publishing with './gradlew publish'
+publish.dependsOn assemble
+publishToMavenLocal.dependsOn assemble
+publishing {
+    publications {
+        maven(MavenPublication) {
+            artifactId "domain-util"
+            artifact("build/distributions/${rootProject.name}-${project.version}.zip")
+        }
+    }
+
     repositories {
-        mavenDeployer {
-            repository(url: calnet_deploy_contextUrl + '/' + calnet_deploy_repo) {
-                authentication(
-                        userName: calnet_deploy_user,
-                        password: calnet_deploy_password
-                )
+        maven {
+            // Put the property settings in ~/.gradle/gradle.properties for
+            // default_deploy_url, default_deploy_grails_plugin_repo
+            // default_deploy_username and default_deploy_password.
+            url "${project.property('default_deploy_url')}/${default_deploy_grails_plugin_repo}"
+            credentials {
+                username project.property("default_deploy_user")
+                password project.property("default_deploy_password")
             }
         }
     }

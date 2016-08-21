@@ -14,7 +14,7 @@
 //
 
 allprojects {
-    version = '0.19-SNAPSHOT'
+    version = '0.20-SNAPSHOT'
 
     // Invoke with "gradle -q hello".
     // This is here just to confirm we have the subproject names configured
