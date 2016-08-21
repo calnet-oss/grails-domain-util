@@ -28,7 +28,7 @@ apply plugin: "io.spring.dependency-management"
 apply plugin: 'maven-publish'
 apply plugin: 'distribution'
 
-group = 'edu.berkeley.calnet.libs'
+group = 'edu.berkeley.calnet.groovy.libs'
 
 targetCompatibility = 1.7
 sourceCompatibility = 1.7
@@ -64,8 +64,7 @@ dependencies {
 }
 
 jar {
-    baseName = rootProject.name
-    version = project.version
+    from {["../LICENSE.txt", "../NOTICE_THIRD_PARTY.txt"]}
 }
 
 task sourceJar(type: Jar) {
@@ -89,8 +88,7 @@ publishing {
             // Put the property settings in ~/.gradle/gradle.properties for
             // default_deploy_url, default_deploy_grails_plugin_repo
             // default_deploy_username and default_deploy_password.
-            //url "${project.property('default_deploy_url')}/${default_deploy_lib_repo}"
-            url "${project.property('default_deploy_url')}/calnet-libs"
+            url "${project.property('default_deploy_url')}/${default_deploy_lib_repo}"
             credentials {
                 username project.property("default_deploy_user")
                 password project.property("default_deploy_password")
