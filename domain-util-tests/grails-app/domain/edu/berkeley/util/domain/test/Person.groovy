@@ -29,6 +29,8 @@ package edu.berkeley.util.domain.test
 import edu.berkeley.util.domain.transform.ConverterConfig
 import edu.berkeley.calnet.groovy.transform.LogicalEqualsAndHashCode
 
+import java.beans.Transient
+
 @LogicalEqualsAndHashCode(excludes = ["dummyField", "uid"])
 @ConverterConfig(excludes = ["dummyField"])
 class Person {
@@ -49,7 +51,7 @@ class Person {
     static mapping = {
         table name: "Person"
         version false
-        id name: 'uid', column: 'uid', generator: 'assigned', sqlType: 'VARCHAR(64)'
+        id column: 'uid', generator: 'assigned', sqlType: 'VARCHAR(64)'
         dateOfBirthMMDD column: 'dateOfBirthMMDD', sqlType: 'CHAR(4)'
         names cascade: "all-delete-orphan"
         uniqueElements cascade: "all-delete-orphan"

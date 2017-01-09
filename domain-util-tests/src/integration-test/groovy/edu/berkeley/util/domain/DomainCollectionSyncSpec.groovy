@@ -30,9 +30,13 @@ import edu.berkeley.util.domain.test.NameType
 import edu.berkeley.util.domain.test.Person
 import edu.berkeley.util.domain.test.PersonName
 import edu.berkeley.util.domain.test.UniqueElement
-import grails.test.spock.IntegrationSpec
+import grails.test.mixin.integration.Integration
+import grails.transaction.Rollback
+import spock.lang.Specification
 
-class DomainCollectionSyncSpec extends IntegrationSpec {
+@Integration
+@Rollback
+class DomainCollectionSyncSpec extends Specification {
 
     private static def opts = [failOnError: true, flush: true]
 
@@ -70,10 +74,13 @@ class DomainCollectionSyncSpec extends IntegrationSpec {
         person.save(opts)
     }
 
-    void setup() {
-        createNameTypes()
-        createPeople()
-        createOriginalPersonNames()
+    /**
+     * Data setup cannot be done in `setup` (see: http://docs.grails.org/latest/guide/testing.html#integrationTesting for reason)
+     */
+    void setupData() {
+            createNameTypes()
+            createPeople()
+            createOriginalPersonNames()
     }
 
     // same as the old collection, except we removed 11 and 22 and added 3
@@ -113,7 +120,9 @@ class DomainCollectionSyncSpec extends IntegrationSpec {
      * from LogicalHashCodeAndEquals.
      */
     void "test syncing collection using hashCode() and equals() from LogicalHashCodeAndEquals"() {
-        given:
+        given: "Data is created inside a transaction"
+        setupData()
+        and: "And the getting the first person"
         Person person = Person.get("1")
         when:
         // person.names should contain the new collection
@@ -132,7 +141,9 @@ class DomainCollectionSyncSpec extends IntegrationSpec {
      * from LogicalHashCodeAndEquals and an add and remove closure.
      */
     void "test syncing collection using hashCode() and equals() from LogicalHashCodeAndEquals and add and remove closures"() {
-        given:
+        given: "Data is created inside a transaction"
+        setupData()
+        and: "And the getting the first person"
         Person person = Person.get("1")
         when:
         // person.names should contain the new collection
@@ -152,7 +163,9 @@ class DomainCollectionSyncSpec extends IntegrationSpec {
     }
 
     void "test changing a collection that has a unique constraint"() {
-        given:
+        given: "Data is created inside a transaction"
+        setupData()
+        and: "And the getting the first person"
         Person person = Person.get("1")
         UniqueElement ue = new UniqueElement(name: "test1", person: person)
         person.addToUniqueElements(ue)

@@ -39,6 +39,43 @@
 // Gradle Multi-Project documentation is here:
 // https://docs.gradle.org/current/userguide/multi_project_builds.html
 //
+buildscript {
+    repositories {
+        mavenLocal()
+        maven { url "https://repo.grails.org/grails/core" }
+    }
+    dependencies {
+        classpath "org.grails:grails-gradle-plugin:$grailsVersion"
+        classpath "org.grails.plugins:hibernate5:6.0.4"
+    }
+}
+
 allprojects {
-    version = '1.0.0-SNAPSHOT'
+    apply plugin: "idea"
+    apply plugin: "groovy"
+
+    targetCompatibility = 1.8
+    sourceCompatibility = 1.8
+
+    group = 'edu.berkeley.calnet.grails.libs'
+    version = '1.1.0-SNAPSHOT'
+}
+subprojects {
+    repositories {
+        mavenLocal()
+        // If using a Maven proxy, put the property settings in
+        // ~/.gradle/gradle.properties for default_proxy_url,
+        // default_proxy_username and default_proxy_password.
+        if (project.hasProperty("default_proxy_url")) {
+            maven {
+                url project.property("default_proxy_url")
+                credentials {
+                    username project.property("default_proxy_username")
+                    password project.property("default_proxy_password")
+                }
+            }
+        }
+        jcenter()
+        mavenCentral()
+    }
 }
