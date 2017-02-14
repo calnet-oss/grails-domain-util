@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016, Regents of the University of California and
+ * Copyright (c) 2016-2017, Regents of the University of California and
  * contributors.
  * All rights reserved.
  *
@@ -42,7 +42,21 @@
 buildscript {
     repositories {
         mavenLocal()
+        // If using a Maven proxy, put the property settings in
+        // ~/.gradle/gradle.properties for default_proxy_url,
+        // default_proxy_username and default_proxy_password.
+        if (project.hasProperty("default_proxy_url")) {
+            maven {
+                url project.property("default_proxy_url")
+                credentials {
+                    username project.property("default_proxy_username")
+                    password project.property("default_proxy_password")
+                }
+            }
+        }
+        jcenter()
         maven { url "https://repo.grails.org/grails/core" }
+        mavenCentral()
     }
     dependencies {
         classpath "org.grails:grails-gradle-plugin:$grailsVersion"
@@ -58,8 +72,9 @@ allprojects {
     sourceCompatibility = 1.8
 
     group = 'edu.berkeley.calnet.grails.libs'
-    version = '1.1.0-SNAPSHOT'
+    version = '1.1.1-SNAPSHOT'
 }
+
 subprojects {
     repositories {
         mavenLocal()

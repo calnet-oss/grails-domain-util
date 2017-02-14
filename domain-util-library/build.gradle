@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016, Regents of the University of California and
+ * Copyright (c) 2016-2017, Regents of the University of California and
  * contributors.
  * All rights reserved.
  *
@@ -37,8 +37,8 @@ dependencyManagement {
 }
 
 dependencies {
-    compile "org.grails:grails-bootstrap"
-    compile "org.grails:grails-core"
+    compileOnly "org.grails:grails-bootstrap"
+    compileOnly "org.grails:grails-core"
     compile "edu.berkeley.calnet.groovy.libs:hashcode-ast:1.0.0-SNAPSHOT"
 }
 
@@ -48,6 +48,7 @@ jar {
 
 task sourceJar(type: Jar) {
     from sourceSets.main.allGroovy
+    from {["../LICENSE.txt", "../NOTICE_THIRD_PARTY.txt"]}
 }
 
 // publishing with './gradlew publish'
