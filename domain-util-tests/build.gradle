@@ -49,8 +49,7 @@ dependencies {
     compile "org.hibernate:hibernate-ehcache:5.1.2.Final"
     runtime "com.h2database:h2"
     testCompile "org.grails:grails-plugin-testing"
-    compile project(":domain-util-library")
-
+    compile project("$domainUtilRef:domain-util-library")
 }
 
 bootRun {
