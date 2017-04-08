@@ -118,18 +118,11 @@ class DomainCollectionSyncIntegrationSpec extends Specification {
             person.removeFromUniqueElements(it)
         })
         person.save(opts)
-
-        Closure<Boolean> testResult = {
-            Person.withNewSession {
-                person.refresh()
-                assert person.uniqueElements.size() == 1
-                assert person.uniqueElements[0].name == "test2"
-            }
-            return true
-        }
+        person.refresh()
 
         then:
-        testResult()
+        person.uniqueElements.size() == 1
+        person.uniqueElements[0].name == "test2"
     }
 
     private void createNameTypes() {
