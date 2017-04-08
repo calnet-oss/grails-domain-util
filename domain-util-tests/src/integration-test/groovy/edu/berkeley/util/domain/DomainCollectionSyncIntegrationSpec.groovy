@@ -33,14 +33,104 @@ import edu.berkeley.util.domain.test.UniqueElement
 import grails.test.mixin.integration.Integration
 import grails.transaction.Rollback
 import spock.lang.Specification
-import spock.lang.Stepwise
 
-@Stepwise
 @Integration
 @Rollback
-class DomainCollectionSyncSpec extends Specification {
+class DomainCollectionSyncIntegrationSpec extends Specification {
 
     private static def opts = [failOnError: true, flush: true]
+
+    /**
+     * Test that the "target" collection becomes the "source" collection
+     * using CollectionUtil.sync().  This utilizes hashCode() and equals()
+     * from LogicalHashCodeAndEquals.
+     */
+    void "test syncing collection using hashCode() and equals() from LogicalHashCodeAndEquals"() {
+        given: "Data is created inside a transaction"
+        setupData()
+
+        and: "And the getting the first person"
+        Person person = Person.get("1")
+
+        when:
+        // person.names should contain the new collection
+        assert person.names*.id.sort() == [1L, 2L, 11L, 22L]
+        CollectionUtil.sync(person, person.names, getNameCollectionNew(person), CollectionUtil.FlushMode.NO_FLUSH)
+        person.save(opts)
+        person.refresh()
+
+        then:
+        // We should have 1,2,3 now, but it can be ordered any way in
+        // the set so sort the results
+        testCollection(person, { it.names.collect { name -> "${name.id}:${name.fullName}" }.sort() }, ["1:John M Smith", "2:John Mark Changed", "3:John Markus Smith"])
+    }
+
+    /**
+     * Test that the "target" collection becomes the "source" collection
+     * using CollectionUtil.sync().  This utilizes hashCode() and equals()
+     * from LogicalHashCodeAndEquals and an add and remove closure.
+     */
+    void "test syncing collection using hashCode() and equals() from LogicalHashCodeAndEquals and add and remove closures"() {
+        given: "Data is created inside a transaction"
+        setupData()
+
+        and: "And the getting the first person"
+        Person person = Person.get("1")
+
+        when:
+        // person.names should contain the new collection
+        assert person.names*.id.sort() == [1L, 2L, 11L, 22L]
+        CollectionUtil.sync(person, person.names, getNameCollectionNew(person), CollectionUtil.FlushMode.NO_FLUSH, {
+            // add closure
+            person.addToNames(it)
+        }, {
+            // remove closure
+            person.removeFromNames(it)
+        })
+        person.save(opts)
+        person.refresh()
+
+        then:
+        // We should have 1,2,3 now, but it can be ordered any way in
+        // the set so sort the results
+        testCollection(person, { it.names.collect { name -> "${name.id}:${name.fullName}" }.sort() }, ["1:John M Smith", "2:John Mark Changed", "3:John Markus Smith"])
+    }
+
+    void "test changing a collection that has a unique constraint"() {
+        given: "Data is created inside a transaction"
+        setupData()
+
+        and: "And the getting the first person"
+        Person person = Person.get("1")
+        UniqueElement ue = new UniqueElement(name: "test1", person: person)
+        person.addToUniqueElements(ue)
+        person.save(opts)
+        person.refresh()
+
+        when:
+        // create a new collection with a different unique element
+        assert person.uniqueElements?.size() == 1 && person.uniqueElements[0].id
+        HashSet<UniqueElement> newCollection = new HashSet<UniqueElement>()
+        newCollection.add(new UniqueElement(name: "test2", person: person))
+        CollectionUtil.sync(person, person.uniqueElements, newCollection, CollectionUtil.FlushMode.FLUSH, {
+            person.addToUniqueElements(it)
+        }, {
+            person.removeFromUniqueElements(it)
+        })
+        person.save(opts)
+
+        Closure<Boolean> testResult = {
+            Person.withNewSession {
+                person.refresh()
+                assert person.uniqueElements.size() == 1
+                assert person.uniqueElements[0].name == "test2"
+            }
+            return true
+        }
+
+        then:
+        testResult()
+    }
 
     private void createNameTypes() {
         [
@@ -80,9 +170,9 @@ class DomainCollectionSyncSpec extends Specification {
      * Data setup cannot be done in `setup` (see: http://docs.grails.org/latest/guide/testing.html#integrationTesting for reason)
      */
     void setupData() {
-            createNameTypes()
-            createPeople()
-            createOriginalPersonNames()
+        createNameTypes()
+        createPeople()
+        createOriginalPersonNames()
     }
 
     // same as the old collection, except we removed 11 and 22 and added 3
@@ -107,95 +197,9 @@ class DomainCollectionSyncSpec extends Specification {
     }
 
     boolean testCollection(Person person, Closure<Collection> realValuesClosure, Collection expectedValues) {
-        Person.withNewSession {
-            person.refresh()
-            // We should have 1,2,3 now, but it can be ordered any way in
-            // the set so sort the results
-            assert realValuesClosure(person) == expectedValues
-        }
+        // We should have 1,2,3 now, but it can be ordered any way in
+        // the set so sort the results
+        assert realValuesClosure(person) == expectedValues
         return true
-    }
-
-    /**
-     * Test that the "target" collection becomes the "source" collection
-     * using CollectionUtil.sync().  This utilizes hashCode() and equals()
-     * from LogicalHashCodeAndEquals.
-     */
-    void "test syncing collection using hashCode() and equals() from LogicalHashCodeAndEquals"() {
-        given: "Data is created inside a transaction"
-        setupData()
-        and: "And the getting the first person"
-        Person person = Person.get("1")
-        when:
-        // person.names should contain the new collection
-        assert person.names*.id.sort() == [1, 2, 11, 22]
-        CollectionUtil.sync(person, person.names, getNameCollectionNew(person), CollectionUtil.FlushMode.NO_FLUSH)
-        person.save(opts)
-        then:
-        // We should have 1,2,3 now, but it can be ordered any way in
-        // the set so sort the results
-        testCollection(person, { it.names.collect { name -> "${name.id}:${name.fullName}" }.sort() }, ["1:John M Smith", "2:John Mark Changed", "3:John Markus Smith"])
-    }
-
-    /**
-     * Test that the "target" collection becomes the "source" collection
-     * using CollectionUtil.sync().  This utilizes hashCode() and equals()
-     * from LogicalHashCodeAndEquals and an add and remove closure.
-     */
-    void "test syncing collection using hashCode() and equals() from LogicalHashCodeAndEquals and add and remove closures"() {
-        given: "Data is created inside a transaction"
-        setupData()
-        and: "And the getting the first person"
-        Person person = Person.get("1")
-        when:
-        // person.names should contain the new collection
-        assert person.names*.id.sort() == [1, 2, 11, 22]
-        CollectionUtil.sync(person, person.names, getNameCollectionNew(person), CollectionUtil.FlushMode.NO_FLUSH, {
-            // add closure
-            person.addToNames(it)
-        }, {
-            // remove closure
-            person.removeFromNames(it)
-        })
-        person.save(opts)
-        then:
-        // We should have 1,2,3 now, but it can be ordered any way in
-        // the set so sort the results
-        testCollection(person, { it.names.collect { name -> "${name.id}:${name.fullName}" }.sort() }, ["1:John M Smith", "2:John Mark Changed", "3:John Markus Smith"])
-    }
-
-    void "test changing a collection that has a unique constraint"() {
-        given: "Data is created inside a transaction"
-        setupData()
-        and: "And the getting the first person"
-        Person person = Person.get("1")
-        UniqueElement ue = new UniqueElement(name: "test1", person: person)
-        person.addToUniqueElements(ue)
-        person.save(opts)
-        person.refresh()
-
-        when:
-        // create a new collection with a different unique element
-        assert person.uniqueElements?.size() == 1 && person.uniqueElements[0].id
-        HashSet<UniqueElement> newCollection = new HashSet<UniqueElement>()
-        newCollection.add(new UniqueElement(name: "test2", person: person))
-        CollectionUtil.sync(person, person.uniqueElements, newCollection, CollectionUtil.FlushMode.FLUSH, {
-            person.addToUniqueElements(it)
-        }, {
-            person.removeFromUniqueElements(it)
-        })
-        person.save(opts)
-
-        Closure<Boolean> testResult = {
-            Person.withNewSession {
-                person.refresh()
-                assert person.uniqueElements.size() == 1
-                assert person.uniqueElements[0].name == "test2"
-            }
-            return true
-        }
-
-        then:
-        testResult()
     }
 }
