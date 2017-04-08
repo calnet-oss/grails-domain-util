@@ -33,7 +33,9 @@ import edu.berkeley.util.domain.test.UniqueElement
 import grails.test.mixin.integration.Integration
 import grails.transaction.Rollback
 import spock.lang.Specification
+import spock.lang.Stepwise
 
+@Stepwise
 @Integration
 @Rollback
 class DomainCollectionSyncSpec extends Specification {
