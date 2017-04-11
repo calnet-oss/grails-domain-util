@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016, Regents of the University of California and
+ * Copyright (c) 2016-2017, Regents of the University of California and
  * contributors.
  * All rights reserved.
  *
@@ -24,69 +24,22 @@
  * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-buildscript {
-    repositories {
-        mavenLocal()
-        // If using a Maven proxy, put the property settings in
-        // ~/.gradle/gradle.properties for default_proxy_url,
-        // default_proxy_username and default_proxy_password.
-        if (project.hasProperty("default_proxy_url")) {
-            maven {
-                url project.property("default_proxy_url")
-                credentials {
-                    username project.property("default_proxy_username")
-                    password project.property("default_proxy_password")
-                }
-            }
-        }
-        jcenter()
-        mavenCentral()
-    }
-    dependencies {
-        classpath "io.spring.gradle:dependency-management-plugin:${spring_depmgmt_version}"
-        classpath "org.grails:grails-gradle-plugin:${grails_gradle_version}"
-    }
-}
-
-apply plugin: 'groovy'
+apply plugin: "groovy"
 apply plugin: 'project-report'
 apply plugin: "io.spring.dependency-management"
 apply plugin: 'maven-publish'
 apply plugin: 'distribution'
 
-group = 'edu.berkeley.calnet.grails.libs'
-
-targetCompatibility = 1.7
-sourceCompatibility = 1.7
-
-repositories {
-    mavenLocal()
-    // If using a Maven proxy, put the property settings in
-    // ~/.gradle/gradle.properties for default_proxy_url,
-    // default_proxy_username and default_proxy_password.
-    if (project.hasProperty("default_proxy_url")) {
-        maven {
-            url project.property("default_proxy_url")
-            credentials {
-                username project.property("default_proxy_username")
-                password project.property("default_proxy_password")
-            }
-        }
-    }
-    jcenter()
-    mavenCentral()
-}
-
 dependencyManagement {
     imports {
-        mavenBom "edu.berkeley.calnet:gradle-grails-bom:2.5.4"
+        mavenBom "org.grails:grails-bom:$grailsVersion"
     }
 }
 
 dependencies {
-    compile "org.grails:grails-bootstrap"
-    compile "org.grails:grails-core"
-    compile "edu.berkeley.calnet.groovy.libs:hashcode-ast:0.0.4-SNAPSHOT"
+    compileOnly "org.grails:grails-bootstrap"
+    compileOnly "org.grails:grails-core"
+    compile "edu.berkeley.calnet.groovy.libs:hashcode-ast:1.0.0-SNAPSHOT"
 }
 
 jar {
@@ -95,6 +48,7 @@ jar {
 
 task sourceJar(type: Jar) {
     from sourceSets.main.allGroovy
+    from {["../LICENSE.txt", "../NOTICE_THIRD_PARTY.txt"]}
 }
 
 // publishing with './gradlew publish'
