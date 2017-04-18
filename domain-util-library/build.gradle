@@ -30,6 +30,9 @@ apply plugin: "io.spring.dependency-management"
 apply plugin: 'maven-publish'
 apply plugin: 'distribution'
 
+targetCompatibility = 1.8
+sourceCompatibility = 1.8
+
 dependencyManagement {
     imports {
         mavenBom "org.grails:grails-bom:$grailsVersion"
