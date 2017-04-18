@@ -39,7 +39,7 @@ dependencyManagement {
 dependencies {
     compileOnly "org.grails:grails-bootstrap"
     compileOnly "org.grails:grails-core"
-    compile hashcodeAstDep
+    compile pdep(rootProject.hashcodeAstDep)
 }
 
 jar {

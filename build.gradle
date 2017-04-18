@@ -94,3 +94,7 @@ subprojects {
         mavenCentral()
     }
 }
+
+def pdep(String depstr) {
+    return (depstr.startsWith(":") ? project(depstr) : depstr)
+}
