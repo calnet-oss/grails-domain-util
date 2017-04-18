@@ -39,7 +39,7 @@ dependencyManagement {
 dependencies {
     compileOnly "org.grails:grails-bootstrap"
     compileOnly "org.grails:grails-core"
-    compile "edu.berkeley.calnet.groovy.libs:hashcode-ast:1.0.0-SNAPSHOT"
+    compile hashcodeAstDep
 }
 
 jar {
