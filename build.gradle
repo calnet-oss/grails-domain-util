@@ -64,11 +64,11 @@ buildscript {
     }
 }
 
+project.group = 'edu.berkeley.calnet.grails.libs'
+project.version = '1.1.2-SNAPSHOT'
+
 allprojects {
     apply plugin: "idea"
-
-    group = 'edu.berkeley.calnet.grails.libs'
-    version = '1.1.2-SNAPSHOT'
 }
 
 subprojects {
