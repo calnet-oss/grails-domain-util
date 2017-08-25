@@ -64,14 +64,16 @@ buildscript {
     }
 }
 
-project.group = 'edu.berkeley.calnet.grails.libs'
-project.version = '1.1.2-SNAPSHOT'
+group 'edu.berkeley.calnet.grails.libs'
+version '1.1.2-SNAPSHOT'
 
 allprojects {
     apply plugin: "idea"
 }
 
 subprojects {
+    version parent.version
+    group parent.group
     repositories {
         mavenLocal()
         // If using a Maven proxy, put the property settings in
