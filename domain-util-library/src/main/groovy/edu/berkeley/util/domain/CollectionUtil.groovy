@@ -31,7 +31,7 @@ import groovy.util.logging.Slf4j
 @Slf4j
 class CollectionUtil {
     static enum FlushMode {
-        NO_FLUSH, FLUSH
+        NO_FLUSH, FLUSH_DELETES
     }
 
     protected static <T> boolean contains(Collection<T> collection, T o) {
@@ -77,8 +77,9 @@ class CollectionUtil {
 
         // Remove anything from target that's not in source.
         Collection<T> deletedObjects = target.findAll { T it ->
-            // If identifiers match but the hash code is different, we don't want to count
-            // that as a deleted object.  Instead, it will get replaced.
+            // If identifiers match but the hash code is different, we don't
+            // want to count that as a deleted object.  Instead, it will get
+            // replaced.
             if (!contains(source, it)) {
                 boolean isNewOrIsNotInSource = (it.ident() == null || !sourceIdentifiersMap.containsKey(it.ident()))
                 //log.warn("SOURCE DOES NOT CONTAIN $it, isNewOrIsNotInSource=$isNewOrIsNotInSource")
@@ -97,17 +98,26 @@ class CollectionUtil {
         }
 
         // delete() must come before save() in case we are replacing an
-        // object with another that may trigger unique constraint
-        // violations if the .delete() and save() order isn't maintained.
-        if (flushMode == FlushMode.FLUSH) {
+        // object with another that may trigger unique constraint violations
+        // if the .delete() and save() order isn't maintained.
+        if (flushMode == FlushMode.FLUSH_DELETES) {
+            boolean didDelete = false
             deletedObjects.each { delObj ->
                 if (!contains(target, delObj)) {
                     T locked = delObj.lock(delObj.ident())
                     if (locked != null) {
                         locked.delete(flush: true)
+                        didDelete = true
                     } else {
                         //log.warn("${delObj} has disappeared already.  Can't hard-delete it.")
                     }
+                }
+            }
+            if (didDelete && obj) {
+                // Once the individual objects have been deleted, flush the
+                // Hibernate session.
+                obj.withSession { session ->
+                    session.flush()
                 }
             }
         }
@@ -155,10 +165,6 @@ class CollectionUtil {
             }
         }
 
-        //if (flushMode == FlushMode.FLUSH) {
-        //    obj.save(flush: true, failOnError: true)
-        //}
-
         //log.warn("FINAL TARGET: $target")
     }
 
@@ -166,9 +172,9 @@ class CollectionUtil {
      * Synchronize target collection to match source collection.  After this
      * call, target will only contain what's in source.
      *
-     * If flushMode==FlushMode.FLUSH, this will delete any domain object
-     * removed from the target collection.  It will also flush the domain
-     * object with a save() call.
+     * If flushMode==FlushMode.FLUSH_DELETES, this will first delete any
+     * domain object removed from the target collection and then flush the
+     * Hibernate session before any new object is added.
      *
      * <p/>
      *
@@ -178,12 +184,12 @@ class CollectionUtil {
      * specification states that equality in a map is determined by:
      * (key==null ?  k==null : key.equals(k)).
      */
-    public static <T> void sync(def obj,
-                                Collection<T> target,
-                                Collection<T> source,
-                                FlushMode flushMode,
-                                Closure<Boolean> addClosure = null,
-                                Closure<Boolean> removeClosure = null) {
+    static <T> void sync(def obj,
+                         Collection<T> target,
+                         Collection<T> source,
+                         FlushMode flushMode,
+                         Closure<Boolean> addClosure = null,
+                         Closure<Boolean> removeClosure = null) {
         _sync(obj, target, source, flushMode,
                 (addClosure ?:
                         // addClosure(element)
@@ -199,7 +205,7 @@ class CollectionUtil {
                 ))
     }
 
-    public static <T> boolean logicallyEquivalent(Collection<T> c1, Collection<T> c2) {
+    static <T> boolean logicallyEquivalent(Collection<T> c1, Collection<T> c2) {
         if (c1?.size() != c2?.size())
             return false;
 

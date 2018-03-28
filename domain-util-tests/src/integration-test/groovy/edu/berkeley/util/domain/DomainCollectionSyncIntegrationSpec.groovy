@@ -112,7 +112,7 @@ class DomainCollectionSyncIntegrationSpec extends Specification {
         assert person.uniqueElements?.size() == 1 && person.uniqueElements[0].id
         HashSet<UniqueElement> newCollection = new HashSet<UniqueElement>()
         newCollection.add(new UniqueElement(name: "test2", person: person))
-        CollectionUtil.sync(person, person.uniqueElements, newCollection, CollectionUtil.FlushMode.FLUSH, {
+        CollectionUtil.sync(person, person.uniqueElements, newCollection, CollectionUtil.FlushMode.FLUSH_DELETES, {
             person.addToUniqueElements(it)
         }, {
             person.removeFromUniqueElements(it)
