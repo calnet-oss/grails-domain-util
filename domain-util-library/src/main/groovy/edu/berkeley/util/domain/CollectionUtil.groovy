@@ -31,7 +31,7 @@ import groovy.util.logging.Slf4j
 @Slf4j
 class CollectionUtil {
     static enum FlushMode {
-        NO_FLUSH, FLUSH_DELETES
+        NO_FLUSH, FLUSH_DELETES, FLUSH_DELETES_AND_ADDS
     }
 
     protected static <T> boolean contains(Collection<T> collection, T o) {
@@ -100,7 +100,7 @@ class CollectionUtil {
         // delete() must come before save() in case we are replacing an
         // object with another that may trigger unique constraint violations
         // if the .delete() and save() order isn't maintained.
-        if (flushMode == FlushMode.FLUSH_DELETES) {
+        if (flushMode == FlushMode.FLUSH_DELETES || flushMode == FlushMode.FLUSH_DELETES_AND_ADDS) {
             boolean didDelete = false
             deletedObjects.each { delObj ->
                 if (!contains(target, delObj)) {
@@ -128,6 +128,7 @@ class CollectionUtil {
         //log.warn("TARGET IDS: " + targetIdentifiersMap)
 
         // Add anything from the source that's not in target.
+        boolean didAdd = false
         source.each { T objToAdd ->
             if (!contains(target, objToAdd)) {
                 T targetObject = targetIdentifiersMap.get(objToAdd.ident())
@@ -154,14 +155,26 @@ class CollectionUtil {
                     //log.warn("AFTER REMOVAL, TARGET=" + target)
                     addClosure(objToAdd)
                     //log.warn("AFTER ADD-BACK, TARGET=" + target)
+                    if (flushMode == FlushMode.FLUSH_DELETES_AND_ADDS) {
+                        objToAdd.save()
+                        didAdd = true
+                    }
                 } else {
                     //log.warn("ADDING $objToAdd")
-                    // There's no need to save() here.  A later obj.save()
-                    // will accomplish that.
                     addClosure(objToAdd)
+                    if (flushMode == FlushMode.FLUSH_DELETES_AND_ADDS) {
+                        objToAdd.save()
+                        didAdd = true
+                    }
                 }
             } else {
                 //log.warn("SOURCE CONTAINS $objToAdd, LEAVING ALONE")
+            }
+        }
+
+        if (flushMode == FlushMode.FLUSH_DELETES_AND_ADDS && didAdd && obj) {
+            obj.withSession { session ->
+                session.flush()
             }
         }
 
