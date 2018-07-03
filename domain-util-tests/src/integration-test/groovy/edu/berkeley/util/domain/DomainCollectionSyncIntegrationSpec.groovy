@@ -30,8 +30,8 @@ import edu.berkeley.util.domain.test.NameType
 import edu.berkeley.util.domain.test.Person
 import edu.berkeley.util.domain.test.PersonName
 import edu.berkeley.util.domain.test.UniqueElement
-import grails.test.mixin.integration.Integration
-import grails.transaction.Rollback
+import grails.testing.mixin.integration.Integration
+import grails.gorm.transactions.Rollback
 import spock.lang.Specification
 
 @Integration

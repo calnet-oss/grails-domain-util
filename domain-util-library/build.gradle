@@ -47,7 +47,7 @@ buildscript {
         classpath("org.grails:grails-gradle-plugin:$grailsVersion") {
             exclude group: "xerces", module: "xercesImpl"
         }
-        classpath "org.grails.plugins:hibernate5:6.0.4"
+        classpath "org.grails.plugins:hibernate5:${gormVersion-".RELEASE"}"
     }
 }
 
