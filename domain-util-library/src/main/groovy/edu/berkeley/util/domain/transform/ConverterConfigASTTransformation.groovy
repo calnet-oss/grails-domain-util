@@ -35,7 +35,6 @@ import org.codehaus.groovy.ast.stmt.Statement
 import org.codehaus.groovy.control.CompilePhase
 import org.codehaus.groovy.control.SourceUnit
 import org.codehaus.groovy.transform.AbstractASTTransformation
-import org.codehaus.groovy.transform.CanonicalASTTransformation
 import org.codehaus.groovy.transform.GroovyASTTransformation
 
 import static org.codehaus.groovy.ast.ClassHelper.make
@@ -84,11 +83,23 @@ class ConverterConfigASTTransformation extends AbstractASTTransformation {
             List<String> excludes = getMemberList(anno, "excludes")
             List<String> includes = getMemberList(anno, "includes")
             Boolean includeNulls = getMemberList(anno, "includeNulls")
-            if (hasAnnotation(cNode, CanonicalASTTransformation.MY_TYPE)) {
-                AnnotationNode canonical = cNode.getAnnotations(CanonicalASTTransformation.MY_TYPE).get(0)
-                if (excludes == null || excludes.isEmpty()) excludes = getMemberList(canonical, "excludes")
-                if (includes == null || includes.isEmpty()) includes = getMemberList(canonical, "includes")
-                if (includeNulls == null) includeNulls = getMemberList(canonical, "includeNulls")
+            if (hasAnnotation(cNode, MY_TYPE)) {
+                AnnotationNode canonical = cNode.getAnnotations(MY_TYPE).get(0);
+                if (excludes == null || excludes.isEmpty()) {
+                    excludes = getMemberStringList(canonical, "excludes");
+                }
+                if (includes == null || includes.isEmpty()) {
+                    includes = getMemberStringList(canonical, "includes");
+                }
+                if (includeNulls == null) {
+                    includeNulls = getMemberStringList(canonical, "includeNulls")
+                }
+            }
+            if (excludes == null) {
+                excludes = []
+            }
+            if (includes == null) {
+                includes = []
             }
 
             if (!checkIncludeExclude(anno, excludes, includes, MY_TYPE_NAME)) return
